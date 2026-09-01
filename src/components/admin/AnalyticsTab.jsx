@@ -1,5 +1,6 @@
 import { useAdminStats } from '../../hooks/useAdminStats';
 import { Download, LayoutDashboard, Trophy, Megaphone, TrendingUp, Flame, GraduationCap, RefreshCw, AlertCircle } from 'lucide-react';
+import { getDepartmentShortName } from '../../data/departments';
 
 function pctColor(p) {
   if (p >= 70) return 'var(--g-primary)';
@@ -88,14 +89,14 @@ export default function AnalyticsTab() {
           },
           {
             label: 'Most Active Dept.',
-            value: loading ? '—' : (mostActive?.dept?.split(' ').slice(-2).join(' ') || 'N/A'),
-            sub: loading ? 'Loading…' : (mostActive ? `${mostActive.pct}% completion` : 'No data yet'),
+            value: loading ? '—' : (mostActive ? getDepartmentShortName(mostActive.dept) : 'N/A'),
+            sub: loading ? 'Loading…' : (mostActive ? `${mostActive.pct}% completion (${mostActive.completed}/${mostActive.students})` : 'No data yet'),
             icon: <Trophy size={20} />, color: 'var(--gold-d)',
           },
           {
             label: 'Least Active Dept.',
-            value: loading ? '—' : (leastActive?.dept?.split(' ').slice(-2).join(' ') || 'N/A'),
-            sub: loading ? 'Loading…' : (leastActive ? `${leastActive.pct}% — needs attention` : 'No data yet'),
+            value: loading ? '—' : (leastActive ? getDepartmentShortName(leastActive.dept) : 'N/A'),
+            sub: loading ? 'Loading…' : (leastActive ? `${leastActive.pct}% completion (${leastActive.completed}/${leastActive.students})` : 'No data yet'),
             icon: <Megaphone size={20} />, color: '#9D174D',
           },
         ].map(({ label, value, sub, icon, color }) => (

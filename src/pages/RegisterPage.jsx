@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../hooks/useApi';
-import { UserPlus, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowRight, ChevronDown } from 'lucide-react';
+import { DEPARTMENTS } from '../data/departments';
 import logo from '../assets/logo.png';
 
 // ── Client-side validators ────────────────────────────────────────────────────
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validate({ studentId, fullName, email, password, confirmPassword }) {
+function validate({ studentId, fullName, dept, email, password, confirmPassword }) {
   if (!studentId.trim())    return { field: 'studentId',      msg: 'Student ID is required.' };
   if (!fullName.trim())     return { field: 'fullName',       msg: 'Full name is required.' };
+  if (!dept || !dept.trim()) return { field: 'dept',           msg: 'Please select your college / department.' };
   if (!email.trim())        return { field: 'email',          msg: 'Email is required.' };
   if (!EMAIL_RX.test(email.trim()))
                             return { field: 'email',          msg: 'Please enter a valid email address.' };
@@ -53,7 +55,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    studentId: '', fullName: '', email: '', password: '', confirmPassword: '',
+    studentId: '', fullName: '', dept: '', email: '', password: '', confirmPassword: '',
   });
   const [fieldError, setFieldError] = useState({});   // per-field error highlight
   const [error, setError]   = useState('');           // general error banner
@@ -87,6 +89,7 @@ export default function RegisterPage() {
       const data = await api.post('/auth/register', {
         studentId:       form.studentId.trim(),
         fullName:        form.fullName.trim(),
+        dept:            form.dept.trim(),
         email:           form.email.trim().toLowerCase(),
         password:        form.password,
         confirmPassword: form.confirmPassword,
@@ -107,6 +110,8 @@ export default function RegisterPage() {
         setFieldError({ studentId: true });
       } else if (msg.toLowerCase().includes('email')) {
         setFieldError({ email: true });
+      } else if (msg.toLowerCase().includes('college') || msg.toLowerCase().includes('department')) {
+        setFieldError({ dept: true });
       }
 
       setError(msg);
@@ -183,6 +188,37 @@ export default function RegisterPage() {
                 onFocus={e => Object.assign(e.target.style, focusStyle)}
                 onBlur={e => { e.target.style.borderColor = fieldError.fullName ? '#FCA5A5' : 'var(--gray-mid)'; }}
               />
+            </div>
+
+            {/* College / Department */}
+            <div style={{ marginBottom: 16 }}>
+              <label htmlFor="reg-dept" style={labelStyle()}>College / Department</label>
+              <div style={{ position: 'relative' }}>
+                <select
+                  id="reg-dept"
+                  value={form.dept}
+                  onChange={e => set('dept', e.target.value)}
+                  style={{
+                    ...inputStyle(fieldError.dept),
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none',
+                    paddingRight: 40,
+                    cursor: 'pointer',
+                    color: form.dept ? 'var(--gray-dk)' : '#9CA3AF',
+                  }}
+                  onFocus={e => Object.assign(e.target.style, focusStyle)}
+                  onBlur={e => { e.target.style.borderColor = fieldError.dept ? '#FCA5A5' : 'var(--gray-mid)'; }}
+                >
+                  <option value="" disabled>-- Select College / Department --</option>
+                  {DEPARTMENTS.map(d => (
+                    <option key={d} value={d} style={{ color: 'var(--gray-dk)' }}>{d}</option>
+                  ))}
+                </select>
+                <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--gray-t)', display: 'flex', alignItems: 'center' }}>
+                  <ChevronDown size={18} />
+                </div>
+              </div>
             </div>
 
             {/* Email */}

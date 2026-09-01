@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useComments } from '../hooks/useComments';
+import { getDepartmentColor } from '../data/departments';
 
 const TYPE_STYLE = {
   policy:   { bg: '#FCE7F3', color: '#9D174D', label: '📝 Policy Suggestion' },
@@ -24,19 +25,7 @@ function initials(name) {
 }
 
 function avatarColor(dept) {
-  const map = {
-    'Col. of Accountancy':                      '#065F46',
-    'Col. of Arts and Sciences':                '#5B21B6',
-    'Col. of Business Administration':          '#1D4ED8',
-    'Col. of Computing Sciences & Engineering': '#92400E',
-    'Col. of Computing Sciences & Eng.':        '#92400E',
-    'Col. of Engineering':                      '#9A3412',
-    'Col. of Human Kinetics':                   '#0E7490',
-    'Col. of Nursing & Allied Health Sciences': '#0F766E',
-    'Col. of Teacher Education':                '#9D174D',
-    'Col. of Tourism & Hospitality Management': '#1F6F3D',
-  };
-  return map[dept] || '#374151';
+  return getDepartmentColor(dept);
 }
 
 export default function CommentsPanel({ sectionId, sectionTitle }) {

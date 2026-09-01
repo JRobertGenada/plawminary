@@ -55,6 +55,9 @@ if (($path === '/api/health' || $path === '/health') && $method === 'GET') {
 }
 
 // ─── Auth Endpoints ───────────────────────────────────────────────────────────
+if (($path === '/api/auth/register' || $path === '/auth/register') && $method === 'POST') {
+    AuthController::register();
+}
 if (($path === '/api/auth/login' || $path === '/auth/login') && $method === 'POST') {
     AuthController::login();
 }

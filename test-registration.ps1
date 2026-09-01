@@ -24,7 +24,7 @@ $null = Post "/auth/register" @{}
 $testId = "2024-TEST-REG-" + (Get-Random -Minimum 1000 -Maximum 9999)
 $testEmail = "student$testId@plsp.edu.ph"
 
-$r = Post "/auth/register" @{ studentId=$testId; fullName="Julius Test"; email=$testEmail; password="SecurePass123"; confirmPassword="SecurePass123" }
+$r = Post "/auth/register" @{ studentId=$testId; fullName="Julius Test"; dept="College of Computer Studies and Technology (CCST)"; email=$testEmail; password="SecurePass123"; confirmPassword="SecurePass123" }
 Write-Host "`n[TEST 3] Valid registration ($testId): $($r.Code) => $($r.Body | ConvertTo-Json -Compress)" -ForegroundColor $(if ($r.Code -eq 201) {"Green"} else {"Red"})
 
 # Test 4: Login with newly registered account
@@ -32,23 +32,23 @@ $r = Post "/auth/login" @{ studentId=$testId; password="SecurePass123" }
 Write-Host "[TEST 4] New student login ($testId): $($r.Code) => $($r.Body | ConvertTo-Json -Compress)" -ForegroundColor $(if ($r.Code -eq 200) {"Green"} else {"Red"})
 
 # Test 5: Duplicate Student ID
-$r = Post "/auth/register" @{ studentId=$testId; fullName="Another"; email="other@test.com"; password="SecurePass123"; confirmPassword="SecurePass123" }
+$r = Post "/auth/register" @{ studentId=$testId; fullName="Another"; dept="College of Computer Studies and Technology (CCST)"; email="other@test.com"; password="SecurePass123"; confirmPassword="SecurePass123" }
 Write-Host "[TEST 5] Duplicate ID: $($r.Code) => $($r.Body | ConvertTo-Json -Compress)" -ForegroundColor $(if ($r.Code -eq 409) {"Green"} else {"Red"})
 
 # Test 6: Duplicate email
-$r = Post "/auth/register" @{ studentId="2024-DIFF-ID"; fullName="Another"; email=$testEmail; password="SecurePass123"; confirmPassword="SecurePass123" }
+$r = Post "/auth/register" @{ studentId="2024-DIFF-ID"; fullName="Another"; dept="College of Arts and Sciences (CAS)"; email=$testEmail; password="SecurePass123"; confirmPassword="SecurePass123" }
 Write-Host "[TEST 6] Duplicate email: $($r.Code) => $($r.Body | ConvertTo-Json -Compress)" -ForegroundColor $(if ($r.Code -eq 409) {"Green"} else {"Red"})
 
 # Test 7: Invalid email
-$r = Post "/auth/register" @{ studentId="2024-INVALID-MAIL"; fullName="Bad Email"; email="notanemail"; password="SecurePass123"; confirmPassword="SecurePass123" }
+$r = Post "/auth/register" @{ studentId="2024-INVALID-MAIL"; fullName="Bad Email"; dept="College of Accountancy (COA)"; email="notanemail"; password="SecurePass123"; confirmPassword="SecurePass123" }
 Write-Host "[TEST 7] Invalid email: $($r.Code) => $($r.Body | ConvertTo-Json -Compress)" -ForegroundColor $(if ($r.Code -eq 400) {"Green"} else {"Red"})
 
 # Test 8: Password mismatch
-$r = Post "/auth/register" @{ studentId="2024-MISMATCH"; fullName="Mismatch"; email="mismatch@test.com"; password="SecurePass123"; confirmPassword="WrongPass999" }
+$r = Post "/auth/register" @{ studentId="2024-MISMATCH"; fullName="Mismatch"; dept="College of Business Administration and Management (CBAM)"; email="mismatch@test.com"; password="SecurePass123"; confirmPassword="WrongPass999" }
 Write-Host "[TEST 8] Password mismatch: $($r.Code) => $($r.Body | ConvertTo-Json -Compress)" -ForegroundColor $(if ($r.Code -eq 400) {"Green"} else {"Red"})
 
 # Test 9: Empty fields
-$r = Post "/auth/register" @{ studentId=""; fullName=""; email=""; password=""; confirmPassword="" }
+$r = Post "/auth/register" @{ studentId=""; fullName=""; dept=""; email=""; password=""; confirmPassword="" }
 Write-Host "[TEST 9] Empty fields: $($r.Code) => $($r.Body | ConvertTo-Json -Compress)" -ForegroundColor $(if ($r.Code -eq 400) {"Green"} else {"Red"})
 
 # Test 1: Existing student login check

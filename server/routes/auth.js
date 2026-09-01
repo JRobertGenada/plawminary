@@ -10,19 +10,21 @@ module.exports = (db) => {
   // POST /api/auth/register
   router.post('/register', async (req, res, next) => {
     try {
-      const { studentId, fullName, email, password, confirmPassword } = req.body;
+      const { studentId, fullName, dept, email, password, confirmPassword } = req.body;
 
       // ── Required field validation ─────────────────────────────────────────
-      if (!studentId || !fullName || !email || !password || !confirmPassword) {
+      if (!studentId || !fullName || !dept || !email || !password || !confirmPassword) {
         return res.status(400).json({ error: 'All fields are required.' });
       }
 
-      const id    = studentId.trim();
-      const name  = fullName.trim();
-      const mail  = email.trim().toLowerCase();
+      const id         = studentId.trim();
+      const name       = fullName.trim();
+      const department = dept.trim();
+      const mail       = email.trim().toLowerCase();
 
-      if (!id)   return res.status(400).json({ error: 'Student ID cannot be blank.' });
-      if (!name) return res.status(400).json({ error: 'Full name cannot be blank.' });
+      if (!id)         return res.status(400).json({ error: 'Student ID cannot be blank.' });
+      if (!name)       return res.status(400).json({ error: 'Full name cannot be blank.' });
+      if (!department) return res.status(400).json({ error: 'College / Department cannot be blank.' });
 
       // ── Email format ──────────────────────────────────────────────────────
       const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -54,7 +56,7 @@ module.exports = (db) => {
 
       await db.query(
         'INSERT INTO users (id, name, dept, role, email, password_hash) VALUES (?, ?, ?, ?, ?, ?)',
-        [id, name, '', 'student', mail, hash]
+        [id, name, department, 'user', mail, hash]
       );
 
       // Return success — do NOT start a session; user must log in explicitly.
