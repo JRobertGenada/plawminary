@@ -4,10 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { useComments } from '../hooks/useComments';
 
 const TYPE_STYLE = {
-  revision: { bg: '#DBEAFE', color: '#1D4ED8', label: '✏️ For Revision' },
   policy:   { bg: '#FCE7F3', color: '#9D174D', label: '📝 Policy Suggestion' },
   question: { bg: '#D1FAE5', color: '#065F46', label: '❓ Question'  },
+  revision: { bg: '#DBEAFE', color: '#1D4ED8', label: '✏️ For Revision' },
 };
+
+const FEEDBACK_OPTIONS = ['policy', 'question'];
 
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
@@ -43,7 +45,7 @@ export default function CommentsPanel({ sectionId, sectionTitle }) {
   const navigate = useNavigate();
 
   const [text, setText]       = useState('');
-  const [type, setType]       = useState('revision');
+  const [type, setType]       = useState('policy');
   const [submitted, setSubmitted] = useState(false);
   // agrees is now a server-managed array — no local liked tracking needed
 
@@ -92,16 +94,19 @@ export default function CommentsPanel({ sectionId, sectionTitle }) {
           <form onSubmit={handleSubmit}>
             {/* Type selector */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-              {Object.entries(TYPE_STYLE).map(([k, { bg, color, label }]) => (
-                <button key={k} type="button" onClick={() => setType(k)} style={{
-                  padding: '5px 12px', borderRadius: 999, fontSize: '.75rem', fontWeight: 700,
-                  border: `1.5px solid ${type === k ? color : 'transparent'}`,
-                  background: type === k ? bg : 'rgba(255,255,255,.6)',
-                  color: type === k ? color : 'var(--gray-t)',
-                  cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
-                  transition: 'all .15s',
-                }}>{label}</button>
-              ))}
+              {FEEDBACK_OPTIONS.map(k => {
+                const { bg, color, label } = TYPE_STYLE[k];
+                return (
+                  <button key={k} type="button" onClick={() => setType(k)} style={{
+                    padding: '5px 12px', borderRadius: 999, fontSize: '.75rem', fontWeight: 700,
+                    border: `1.5px solid ${type === k ? color : 'transparent'}`,
+                    background: type === k ? bg : 'rgba(255,255,255,.6)',
+                    color: type === k ? color : 'var(--gray-t)',
+                    cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
+                    transition: 'all .15s',
+                  }}>{label}</button>
+                );
+              })}
             </div>
 
             <textarea
