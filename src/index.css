@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --g-primary:#1F6F3D; --g-dark:#0F4F2C; --g-deep:#0A3820;
+  --g-light:#2A8F52;   --g-pale:#E8F5EE;
+  --gold:#F4C542;      --gold-d:#D4A82A; --gold-l:#FBE08A;
+  --gray-bg:#F2F2F2;   --gray-mid:#E0E0E0;
+  --gray-t:#6B7280;    --gray-dk:#374151;
+  --tr: all .25s cubic-bezier(.4,0,.2,1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+
+/* Prose styles for policy content */
+.prose-plawminary p  { margin-bottom: 1rem; line-height: 1.75; }
+.prose-plawminary h3 { font-size: .9rem; font-weight: 700; color: var(--g-dark); margin: 1.5rem 0 .6rem; padding-bottom: .4rem; border-bottom: 1px solid var(--gray-mid); }
+.prose-plawminary ul { padding-left: 1.25rem; margin-bottom: 1rem; list-style: disc; }
+.prose-plawminary li { margin-bottom: .4rem; font-size: .875rem; line-height: 1.65; }
+.prose-plawminary strong { font-weight: 700; color: var(--g-dark); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp .3s ease both; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1);    opacity: 0.6; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* Smooth scroll reveal utility */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Custom scrollbar for demo results */
+.demo-results::-webkit-scrollbar { width: 4px; }
+.demo-results::-webkit-scrollbar-track { background: transparent; }
+.demo-results::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 4px; }

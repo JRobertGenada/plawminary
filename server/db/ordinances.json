@@ -1,0 +1,438 @@
+[
+  {
+    "id": 1,
+    "ref": "PLSP-SC-001",
+    "catK": "conduct",
+    "cat": "Student Conduct",
+    "title": "Prescribed Student Uniform Policy",
+    "desc": "Students must wear the prescribed school uniform while on campus during class days unless an official exemption is granted.",
+    "summary": "Wear the official PLSP uniform during class days unless an exemption is approved. Civilian attire may be allowed on Saturdays but must remain modest and appropriate.",
+    "full": "All students of Pamantasan ng Lungsod ng San Pablo are required to wear the prescribed school uniform while on campus during regular class days. This policy reflects the institution's standards for professionalism, discipline, and school identity.\n\nRequests for exemption from wearing the prescribed uniform must be submitted in writing to the Office of Student Affairs and Services. Requests may also be endorsed by College Deans, Area Coordinators, or instructors on behalf of their students.\n\nStudents may be granted exemption in specific cases such as full-time employment requiring office attire, pregnancy, official student activity preparation, or periods of mourning.\n\nStudents attending Saturday classes are allowed to wear civilian attire; however, clothing must remain appropriate and modest. Certain clothing items such as shorts, slippers, sleeveless tops, and tattered clothing are not permitted.\n\nDepartments may also enforce additional dress code rules specific to their programs. Students are expected to follow both the general dress code and department-specific guidelines.",
+    "steps": [
+      "If caught in violation, a security officer or faculty member will issue a verbal warning.",
+      "On a second offense, a Written Warning is filed in your student record.",
+      "A third offense means referral to the Guidance and Counseling Office.",
+      "Repeated violations may result in suspension of class privileges or community service."
+    ],
+    "related": [
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "id": 2,
+    "ref": "PLSP-AP-002",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Academic Integrity & Anti-Cheating Policy",
+    "desc": "All forms of academic dishonesty — cheating, plagiarism, and fabricating data — are strictly prohibited and subject to formal investigation and sanctions.",
+    "summary": "Any form of cheating or plagiarism is strictly prohibited. Violations go through a formal hearing and may result in a failing grade, suspension, or expulsion.",
+    "full": "Academic integrity is a cornerstone of PLSP's educational mission. This ordinance prohibits any form of academic dishonesty including: copying from another student's exam paper, unauthorized use of notes or electronic devices, submitting another person's work as one's own (plagiarism), falsifying research data, and unauthorized collaboration on individual assignments.\n\nAll reported cases undergo a formal investigation. Students accused of academic dishonesty have the right to due process — including the right to present their side and be heard by the Academic Integrity Committee.\n\nSanctions range from a zero score on the work in question, to a failing grade in the subject, up to outright expulsion depending on severity and recurrence. First-time offenders may undergo mandatory academic integrity counseling.\n\nFaculty members are required to report all suspected violations within 48 hours of discovery. Students must be formally notified of the charges before any sanction is imposed.",
+    "steps": [
+      "Document the incident — take note of dates, subject, and specific act of dishonesty observed.",
+      "The faculty member submits an Academic Dishonesty Report to the Department Chair within 48 hours.",
+      "The student receives a written Notice of Charge and has 5 working days to submit a written response.",
+      "The Academic Integrity Committee conducts a formal hearing where both sides present evidence.",
+      "A decision is issued within 10 working days. The student may appeal to the VP for Academic Affairs."
+    ],
+    "related": [
+      4,
+      5,
+      6
+    ]
+  },
+  {
+    "id": 3,
+    "ref": "PLSP-SC-003",
+    "catK": "conduct",
+    "cat": "Student Conduct",
+    "title": "Student ID Wearing & Identification Policy",
+    "desc": "Every enrolled student must secure and wear their official PLSP Student ID card visibly at all times while on campus.",
+    "summary": "Wear your PLSP Student ID visibly at all times on campus. If you forget it, get a gate pass from the Security Office. Never lend or borrow IDs.",
+    "full": "Every enrolled student of PLSP is required to wear their official Student Identification Card (SIC) at all times while on campus. The ID must be worn visibly — clipped or hanging on the front of the uniform — from entry to departure.\n\nIDs must not be covered, defaced, altered, or shared with any other individual. Students who forget their ID may secure a gate pass from the Security Office. Gate passes are limited to three issuances per semester; beyond this, the student will be required to pay the ID replacement fee.\n\nUsing another student's ID or lending your own is a serious violation and will be treated as an act of misrepresentation subject to disciplinary action. The student whose ID was lent is equally liable.\n\nLost or stolen IDs must be reported immediately to the Registrar's Office and the Security Office. An affidavit of loss is required before a replacement ID is issued.",
+    "steps": [
+      "If you forgot your ID, go to the Security Office at the main gate and present proof of enrollment to get a temporary gate pass.",
+      "To report a lost ID, go to the Registrar's Office and secure an Affidavit of Loss from a notary public.",
+      "Submit the affidavit, 2×2 photos, and the replacement fee to the Registrar's Office. Processing takes 3–5 working days.",
+      "If you exceed 3 gate passes per semester, you will receive a written warning and mandatory Guidance counseling."
+    ],
+    "related": [
+      1,
+      4,
+      7
+    ]
+  },
+  {
+    "id": 4,
+    "ref": "PLSP-AP-004",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Classroom Conduct & Decorum Policy",
+    "desc": "Students must attend class on time, respect faculty and peers, and refrain from using mobile phones for non-academic purposes.",
+    "summary": "Be on time. Be respectful. Keep phones away during class. Disruptive behavior results in a class removal and an official incident report.",
+    "full": "PLSP affirms every student's right to learn in a safe, orderly, and respectful environment. Students are expected to arrive on time and be seated before the faculty member begins the session.\n\nTardiness beyond 15 minutes for a 1–1.5 hour class, or 20 minutes for a 2–3 hour class, is counted as an absence. Three tardiness marks may be counted as one absence at the faculty member's discretion.\n\nThe use of mobile phones for non-academic purposes during class is strictly prohibited and devices must be stored during examinations. Recording of class sessions requires the explicit consent of the faculty member.\n\nDisruptive behavior — loud conversation, sleeping, disrespectful language, or threatening conduct — will not be tolerated and may result in removal from the class session and referral to the Student Affairs Office.",
+    "steps": [
+      "The faculty member first addresses minor disruptions directly. For serious issues, the student may be asked to leave the classroom.",
+      "Faculty documents the incident and submits an Incident Report to the Department Chair within 48 hours.",
+      "The student receives a written notice to appear for an initial hearing within 3 working days.",
+      "For patterns of disruption, the student is referred to the Guidance Office for behavioral counseling."
+    ],
+    "related": [
+      2,
+      5,
+      8
+    ]
+  },
+  {
+    "id": 5,
+    "ref": "PLSP-CD-005",
+    "catK": "discipline",
+    "cat": "Campus Discipline",
+    "title": "Campus Discipline & Misconduct Guidelines",
+    "desc": "PLSP classifies student misconduct into Minor (Level 1), Serious (Level 2), and Grave (Level 3) offenses, each with corresponding disciplinary procedures.",
+    "summary": "Student offenses are classified into 3 levels. Minor violations get warnings; serious ones get suspension; grave ones may lead to expulsion. All students have the right to due process.",
+    "full": "This ordinance establishes PLSP's general disciplinary framework, categorizing offenses and outlining fair, transparent procedures.\n\nLevel 1 — Minor Violations: Dress code violation, tardiness, littering, minor insubordination. Sanction: Verbal or written warning, or community service of up to 8 hours.\n\nLevel 2 — Serious Violations: Academic dishonesty on non-major work, verbal harassment, vandalism, possession of prohibited items. Sanction: 1–2 week suspension and mandatory counseling.\n\nLevel 3 — Grave Violations: Physical assault, academic dishonesty on major exams, illegal substances, sexual harassment. Sanction: Suspension of more than two weeks, exclusion, or expulsion.\n\nEvery student subject to disciplinary action has the right to due process: to be informed of the charges in writing, to present a written defense, to be heard by the Student Discipline Committee, and to appeal the decision.",
+    "steps": [
+      "Any PLSP community member may file a complaint in writing to the Student Affairs Office within 3 days of the incident.",
+      "The SAO Discipline Officer conducts a preliminary investigation within 5 working days.",
+      "If sufficient basis exists, a formal charge is issued. The student has 5 working days to file a written answer.",
+      "The Student Discipline Committee holds a formal hearing where both parties may present evidence and witnesses.",
+      "The Committee issues a written decision within 10 days. The student may appeal to the University President within 5 working days."
+    ],
+    "related": [
+      1,
+      2,
+      6
+    ]
+  },
+  {
+    "id": 6,
+    "ref": "PLSP-RR-006",
+    "catK": "rights",
+    "cat": "Rights & Responsibilities",
+    "title": "Student Rights & Responsibilities Charter",
+    "desc": "PLSP guarantees every student fundamental rights — quality education, due process, freedom of expression — and outlines corresponding responsibilities.",
+    "summary": "You have the right to quality education, due process, and freedom of expression. In return, you are responsible for following university rules and respecting others.",
+    "full": "PLSP is committed to creating an inclusive, safe, and empowering environment for all students. This charter enumerates rights and corresponding responsibilities.\n\nStudent Rights include: the right to quality education and fair academic evaluation; the right to a safe and healthy campus environment; the right to freedom of expression within prescribed legal and institutional guidelines; the right to due process in all disciplinary proceedings; and the right to participate in student governance.\n\nStudent Responsibilities include: attending classes regularly and on time; respecting the rights and dignity of all campus community members; adhering to all university rules and regulations; taking care of university facilities and property; and actively participating in co-curricular and civic life.\n\nStudents who believe their rights have been violated may file a formal grievance through the Student Affairs Office. The university is committed to resolving all grievances within 30 working days.",
+    "steps": [
+      "Document the specific right you believe was violated, including dates, persons involved, and supporting details.",
+      "Raise the concern with the faculty member, department chair, or student government representative first for informal resolution.",
+      "If informal resolution fails, submit a written Grievance Form to the Student Affairs Office. The SAO will acknowledge within 2 working days.",
+      "The SAO facilitates mediation. If unresolved, the case is elevated to the Student Grievance Committee for a formal hearing.",
+      "The Committee issues a binding decision within 15 working days. You may further appeal to the University President."
+    ],
+    "related": [
+      5,
+      7
+    ]
+  },
+  {
+    "id": 7,
+    "ref": "PLSP-CD-007",
+    "catK": "discipline",
+    "cat": "Campus Discipline",
+    "title": "Campus Safety & Security Policy",
+    "desc": "All students must comply with security checkpoints, present a valid ID, and must not bring prohibited items onto campus.",
+    "summary": "Always present your ID and submit to bag inspection at campus entry. Prohibited items include weapons, drugs, and alcohol. Participate in all mandatory emergency drills.",
+    "full": "Campus safety is a shared responsibility of all members of the PLSP community. All persons entering PLSP must pass through security checkpoints and present a valid student ID. Students are subject to bag inspection at all entry and exit points. Refusal to comply results in denial of entry and may lead to disciplinary action.\n\nStrictly prohibited on campus: firearms and ammunition, bladed weapons, illegal drugs and controlled substances, alcoholic beverages, explosive materials, and any item deemed dangerous by the Security Office.\n\nStudents found with prohibited items will be reported to the proper law enforcement authorities in addition to facing university disciplinary proceedings. Possession of illegal items may result in immediate exclusion pending investigation.\n\nThe university conducts mandatory emergency drills — fire drills, earthquake drills, and lockdown drills — at least twice per academic year. Attendance is required.",
+    "steps": [
+      "Always present your student ID and cooperate with bag inspection at campus entry points.",
+      "Report suspicious activities or persons to the nearest Security Guard or the Campus Security Hotline immediately.",
+      "If prohibited items are found, security will detain the student, notify the SAO and parents, and coordinate with local authorities as needed.",
+      "Attend all mandatory emergency drills. Failure to participate without a valid excuse will be noted in your student record."
+    ],
+    "related": [
+      3,
+      5,
+      6
+    ]
+  },
+  {
+    "id": 8,
+    "ref": "PLSP-AP-008",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Library Use & Resource Policy",
+    "desc": "Students must present a valid ID to access the PLSP Library. Books may be borrowed for 3 days. Overdue fines of ₱5.00/day apply.",
+    "summary": "Bring your student ID to the library. Borrow up to 3 books for 3 days. Overdue fines are ₱5.00/day per item. Handle all library materials with care.",
+    "full": "The PLSP Library serves as the primary information and learning resource center for all enrolled students and faculty. Library access requires a valid student ID. Students must register upon entry and are expected to maintain silence, refrain from bringing food and beverages, and use electronic devices only for academic purposes.\n\nBooks and non-electronic resources may be borrowed for up to 3 days for a regular loan. Overdue fines are ₱5.00 per day per item. Lost or damaged materials must be replaced or the student pays the assessed replacement cost plus a ₱50.00 processing fee.\n\nElectronic databases and online resources provided by the library are for the exclusive use of enrolled PLSP students and faculty. Sharing access credentials is a violation and may result in suspension of library privileges for one full semester.\n\nReserve materials and reference books may only be used inside the library premises and cannot be borrowed for overnight use.",
+    "steps": [
+      "Return overdue materials and pay the corresponding fine at the library counter before borrowing new items.",
+      "For lost or damaged materials, report it to the librarian immediately and pay the assessed replacement cost plus ₱50.00.",
+      "To dispute a fine, submit a written dispute to the Head Librarian within 5 days. Medical certificates or official university activity documents may qualify for fine waiver.",
+      "Unresolved library obligations will suspend your library privileges and may place a hold on your enrollment until fully settled."
+    ],
+    "related": [
+      2,
+      4
+    ]
+  },
+  {
+    "id": 9,
+    "ref": "PLSP-AP-009",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Attendance Policy",
+    "desc": "Students who accumulate absences totaling 20% or more of total class hours in a subject will be automatically dropped from that subject.",
+    "summary": "Miss 20% of class hours in any subject and you get automatically dropped. Three tardiness marks equal one absence. Always get an excuse letter from OSAS when you're absent.",
+    "full": "Section 18. Attendance\n\n18.1. On the first day of classes, faculty members should sign the registration forms of their students and collect their class cards, which serve as evidence of their being officially enrolled in the class.\n\n18.2. The first day of classes should be devoted to orienting the students regarding the philosophy, vision, mission and goals of the College, the objectives, contents and requirements of the course, and the bases for evaluating students' performance.\n\n18.3. The students should be provided with a copy of the course syllabus/Outcome Based Training Learning Plan for their reference and guidance.\n\n18.4. Checking of attendance in every class shall start on the first day of classes as specified in the school calendar. Absences due to late enrolment will be recorded as such.\n\n18.5. Regular and punctual attendance in all scheduled classes and assemblies is required at all times.\n\n18.6. Students are marked \"late\" if they arrived after 15 minutes of the class period. Three (3) instances of tardiness are recorded as one absence.\n\n18.7. A student who leaves the classroom without permission shall be marked absent. Students who leave the class with teacher's permission and do not return within 10 minutes are considered absent.\n\n18.8. A student who is unable to attend his class due to participation in activities sanctioned by the school and is able to present an excuse letter approved by the Guidance Counselor will not be marked absent.\n\n18.9. Any student who, for unavoidable circumstances, is obliged to be absent from class, must obtain a written excuse from the Office of Student Affairs and Services (OSAS) to be presented to the instructor(s) concerned not later than the second session of the class after the date of the student's return. Any certificate of illness must be secured from a duly licensed physician.\n\n18.10. Where the number of hours lost by absence of a student reaches 20 percent of the hours of recitation, lecture, laboratory, or any other scheduled work in one subject, he/she shall be dropped from the subject; provided, that a faculty may prescribe a longer attendance requirement to meet their special needs.\n\n18.11. If the majority of the absences are excused, the student shall not be given a grade of \"5.00\" upon being thus dropped, but if the majority of the absences are not excused, he/she shall be given a grade of \"5.00\" upon being thus dropped. Time lost by late enrolment shall be also considered as time lost by absence.\n\n18.12. Three tardy arrivals shall be equivalent to one-hour period absence. Tardy arrival is recorded when a student arrives in class after the teacher has called the roll. Absence is non-appearance of the student for the entire class period.",
+    "steps": [
+      "Track your own absences per subject. Count every 3 tardiness marks as 1 absence. Know your exact total.",
+      "If you're absent due to illness, get a medical certificate from a licensed physician as soon as possible.",
+      "Go to OSAS to get an official excuse letter. Submit it to your instructor no later than the 2nd class session after you return.",
+      "If you're at risk of hitting the 20% limit, talk to your instructor or Guidance Counselor immediately — before you reach the limit.",
+      "If you are dropped, check with the Registrar's Office whether the drop is marked \"authorized\" (excused absences) or \"unauthorized\" (unexcused) — this affects whether you receive 5.00."
+    ],
+    "related": [
+      10,
+      4,
+      11
+    ]
+  },
+  {
+    "id": 10,
+    "ref": "PLSP-AP-010",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Grading System & Grade Equivalency",
+    "desc": "DLSP uses a numerical grading system from 1.00 (Excellent) to 5.00 (Failure). A grade of 3.00 is the lowest passing mark. Grades may not be changed or improved by retaking exams.",
+    "summary": "Grades run from 1.00 (Excellent) to 3.00 (Passing). Below 3.00 is a 5.00 (Failure). You cannot retake an exam just to improve a passing grade. INC must be resolved within one academic year.",
+    "full": "Section 21. Evaluation of Student Performance\n\n21.1. Students shall be graded or marked in accordance with the following system:\n\nGrade / Mark  |  Percentage Equivalent  |  Description\n1.00          |  99–100                 |  Excellent\n1.25          |  96–98                  |  Very Superior\n1.50          |  93–95                  |  Superior\n1.75          |  90–92                  |  High Average\n2.00          |  87–89                  |  Average\n2.25          |  84–86                  |  Low Average\n2.50          |  81–83                  |  Satisfactory\n2.75          |  78–80                  |  Fair\n3.00          |  75–77                  |  Passing\n5.00          |  74 and below           |  Failure\nINC           |                         |  Incomplete\nAW            |                         |  Officially Withdrawn\nUW            |                         |  Unofficially Withdrawn\nDRP           |                         |  Dropped\n\n21.2. Failing Grade of 5.00\n\n21.2.1. A student who accumulates a total number of absences equivalent to 20% of the total class meetings in a semester shall automatically be given a final grade of \"5.00\" or failure grade.\n\n21.2.2. A grade of 5.00 is failure and given to students who do not perform satisfactorily according to standards required for the course. The faculty, however, shall render all possible assistance to help and encourage them to pass the course.\n\n21.2.3. In the Report of Grades, a final rating of 5.00 shall be followed by the remark \"Failed\" and the faculty shall be ready to present evidence/s of the student's unsatisfactory performance.\n\nSection 24. Rectification of Errors in the Report of Grades\n\n24.1. A student who has received a passing grade given by the instructor is not allowed to take re-examination for the sole purpose of improving his/her grades.\n\n24.2. No faculty member shall be allowed to change any grade after the report of grades has been filed with the Department Dean or with the Office of the College Registrar. However, in exceptional cases, or when an error has been committed, the instructor/professor concerned shall submit a written request for change of grades to the President through proper channels subject to the approval of the Academic Council.",
+    "steps": [
+      "Check your grades with your instructor before the end of the semester. Errors must be raised immediately.",
+      "If you believe a grade is incorrect, inform your instructor in writing. They must submit a written request for a grade change through the Department Dean to the Academic Council.",
+      "You cannot request a re-exam to improve an already-passing grade. Once grades are filed, changes go through the Academic Council only.",
+      "If you receive a 5.00 due to excessive absences, coordinate with OSAS and Guidance to understand your options for the next semester."
+    ],
+    "related": [
+      9,
+      11,
+      15
+    ]
+  },
+  {
+    "id": 11,
+    "ref": "PLSP-AP-011",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Incomplete (INC) Grade Policy",
+    "desc": "An INC grade is given when a student's standing is passing but they miss the final exam for valid reasons. The INC must be completed within one academic year or it automatically becomes 5.00.",
+    "summary": "You get an INC if you pass all semester work but miss only the final exam for a valid reason (illness, death in family, official college representation). You have 1 academic year to complete it — or it becomes a 5.00.",
+    "full": "Section 21.3. Final Rating of Incomplete (INC)\n\n21.3.1. A grade of INC (Incomplete) is given to a student whose class standing throughout the semester is passing but fails to take only the final examination, due to illness or other valid reasons. If the reason is deemed justifiable by the Dean or Program Head, the student may be given the examination. If the student passes the examination to remove the \"Inc.\", the final grade maybe \"3.0\" or better, if he fails, the final grade shall be \"5.0\". In case the class standing is not passing and the student fails to take the final examinations for any reason, a grade of \"5.0\" shall be given. The \"Inc\" is also given for work that is of passing quality, some part of which is thesis/feasibility study or other requirements but for good reason, was not fulfilled; the final grade may be \"3.0\" or better if the student complies, otherwise, the grade shall be \"5.0\". Petition to take the second examination to complete an INC shall not be granted.\n\n21.3.2. Completion of the INC in any subject shall be the sole responsibility of the student. Only the instructor who gave the INC could issue a completion grade. In justifiable cases, however, another instructor handling the same subject may conduct the removal examination and issue the completion grade, provided, the said instructor is authorized by the Dean concerned.\n\n21.3.3. Some of the valid reasons for not taking the final exam are: grave illness as certified by a physician, death of an immediate relative as supported by a death certificate, for being an official representative of the College in conferences or contests with supporting documents, and other justifiable reasons as may be determined by the faculty member in consultation with the Program Head. Otherwise, the student shall be given a grade of 5.00 for the final term examination and the final rating is computed accordingly.\n\n21.3.4. The concerned student must secure a copy of completion form from the College Registrar to be given to subject instructor for giving the grade, then the same form must be returned to the College Registrar for the record keeping.\n\n21.3.5. Completion of Incomplete rating shall be done within one (1) academic year by passing the final exam by submitting all course requirements. Otherwise, the said incomplete rating automatically becomes 5.00, which will be effected by the Office of the Registrar even without the consent of the subject teacher.",
+    "steps": [
+      "Immediately after missing the final exam, secure supporting documentation: medical certificate from a licensed physician, death certificate of immediate relative, or proof of official college representation.",
+      "Get a Completion Form from the College Registrar's Office.",
+      "Bring the form and documentation to your subject instructor. The instructor will assess whether your reason qualifies for an INC.",
+      "Coordinate with your instructor on the schedule for completing the requirements or taking the removal examination.",
+      "Return the accomplished Completion Form to the College Registrar once your instructor has issued the completion grade.",
+      "Do NOT wait too long — you have exactly one academic year. After that, the Registrar converts the INC to 5.00 automatically."
+    ],
+    "related": [
+      10,
+      9,
+      15
+    ]
+  },
+  {
+    "id": 12,
+    "ref": "PLSP-AP-012",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Dropping of Subjects Policy",
+    "desc": "Students may officially drop a subject before the midterm examination by filing a dropping form. Dropping after midterms is unauthorized and results in a failing grade of 5.00.",
+    "summary": "You can drop a subject with a DRP mark (no failing grade) only BEFORE midterm exams. Dropping after midterms = automatic 5.00 (UW — Unauthorized Withdrawal). Act before it's too late.",
+    "full": "Section 7. Dropping of Subjects\n\nA student who, for some valid reasons, wants to drop a subject within the scheduled period by the College Registrar may do so by filling out a dropping form to be signed by the subject instructor and approved by the Department Dean. He/she will then be marked DRP (dropped) with (authorized withdrawal) in the remarks.\n\nHowever, official dropping of subjects will no longer be allowed after the midterm examination. Dropping after midterms is equivalent to a grade of 5.00 (failed) with UW (unauthorized withdrawal) in the remarks.",
+    "steps": [
+      "Decide to drop BEFORE the midterm examination period begins — this is a hard deadline.",
+      "Go to the Registrar's Office or your Department Office and secure a Dropping Form.",
+      "Have your subject instructor sign the form, then get it approved by the Department Dean.",
+      "Submit the completed form to the Registrar's Office. You will be marked \"DRP\" (Dropped/Authorized Withdrawal) — no failing grade.",
+      "If you stop attending without officially dropping, you receive a 5.00 (UW — Unauthorized Withdrawal) on your record."
+    ],
+    "related": [
+      9,
+      10,
+      13
+    ]
+  },
+  {
+    "id": 13,
+    "ref": "PLSP-AP-013",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Leave of Absence (LOA) Policy",
+    "desc": "Students may apply for a formal Leave of Absence of up to one academic year. No LOA is granted within two weeks before the last day of classes. Students who go on leave without approval must return within the maximum residency rule.",
+    "summary": "You can take up to 1 full academic year as LOA by writing to your Dean. You cannot apply within 2 weeks of the last day of classes. Going AWOL beyond 1 year means you return on probation.",
+    "full": "Section 16. Student Leave of Absence\n\n16.1. A student may take a leave of absence by submitting a written request addressed to the Dean indicating the reasons and duration for the leave of absence which must not exceed one academic year (2 semesters or 3 terms). The intention of the leave of absence shall be presented to the faculty adviser/program head concerned for appropriate action and shall be subject to the approval of the Dean.\n\n16.2. No leave of absence shall be granted two weeks before the last day of classes of a semester/term. If the inability of the student to continue attending classes within the above period is for reasons of health or similar justifiable cause, the absence shall be considered \"excused\". The student shall then be required to present to the faculty members concerned a letter of excuse and to make up for lessons/work missed.\n\n16.3. Returning students who did not apply for a leave of absence and have been out of the campus beyond the allowable maximum period of one (1) academic year shall be readmitted on probationary basis within the maximum residency rule.",
+    "steps": [
+      "Write a formal letter addressed to your Dean stating your reasons for the LOA and the duration (not to exceed 1 academic year / 2 semesters).",
+      "Present the LOA intention to your Faculty Adviser or Program Head for their endorsement and action.",
+      "Submit the request to the Dean for approval. Keep a copy of the approved LOA for your records.",
+      "Do NOT apply for LOA within 2 weeks before the last day of classes — this will not be approved. Health emergencies in that window are treated as excused absences instead.",
+      "When returning after LOA, coordinate with the Registrar and your Department for re-enrollment. Make sure you are still within the maximum residency period."
+    ],
+    "related": [
+      12,
+      16,
+      9
+    ]
+  },
+  {
+    "id": 14,
+    "ref": "PLSP-AP-014",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Shifting of Course Policy",
+    "desc": "Students who are not academically fitted for their current course may shift to another course or department with Dean approval and Guidance Counselor endorsement.",
+    "summary": "To shift courses, you need approval from your Guidance Counselor first, then endorsement from your current Dean, and acceptance from the Dean of your new course. You must meet the new course's admission requirements.",
+    "full": "Section 9. Shifting of Course\n\n9.1. Shifting from one course or major to another from one college/school/department to another shall be allowed under the following conditions:\n\n• A student is allowed by the Dean to shift his/her course if in the opinion of the Dean the student is not academically fitted to the course.\n\n• A student should first seek the approval of the Guidance Counselor before he/she may apply to the Dean where he/she is getting out to be endorsed to the Dean of his/her new course, which in turn shall approve said application provided that the student meets all the qualifications/requirements for the new course.\n\n• A student should accomplish the shifting form and be approved by the Dean concerned.",
+    "steps": [
+      "Visit the Guidance Counselor first to discuss your reason for shifting. You must get their approval before proceeding.",
+      "Consult the admission and retention requirements of the course you want to shift into — make sure you qualify.",
+      "Get an endorsement letter from your current Dean (the college you are leaving).",
+      "Submit your shifting application — along with the endorsement from your current Dean — to the Dean of your intended new course.",
+      "The new Dean approves or denies based on whether you meet the new course's requirements.",
+      "Complete the official Shifting Form and submit it to the Registrar's Office once approved by both Deans."
+    ],
+    "related": [
+      13,
+      16,
+      5
+    ]
+  },
+  {
+    "id": 15,
+    "ref": "PLSP-AP-015",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Graduation Requirements",
+    "desc": "Students must meet academic, residency, character, and application requirements before they may graduate and receive their degree or title from DLSP.",
+    "summary": "To graduate: apply formally to the Registrar, meet all academic requirements, be of good moral character, have at least 1 full year of residence at DLSP, and have earned at least 30 units here.",
+    "full": "Section 25. Graduation Requirements\n\nStudents who fulfilled satisfactorily all the requirements for graduation will be granted their respective titles or degrees under the following regulations:\n\n25.1. The candidate must have formally applied for a title or degree on a form prescribed by the College, and must have filed the application with the Registrar on or before the date specified by his/her office.\n\n25.2. He must have complied with all the requirements regarding his academic work and residence in the College.\n\n25.3. He must be of good moral character.\n\n25.4. He must have been in residence for at least one full school year and earned at least 30 units in DLSP.",
+    "steps": [
+      "Check the Registrar's Office for the graduation application deadline — this is a strict deadline set by the College.",
+      "Fill out the Application for Graduation form available at the Registrar's Office.",
+      "Secure a Curriculum Checklist from your Department to verify all required units are complete.",
+      "Ensure you have no pending disciplinary cases or incomplete grades — these must be resolved before graduation clearance is issued.",
+      "Confirm you have completed at least 30 units at DLSP and have been in residence for at least one full school year.",
+      "Apply for Clearance (see the Clearance Policy) before requesting your Transcript of Records or credentials."
+    ],
+    "related": [
+      16,
+      17,
+      10
+    ]
+  },
+  {
+    "id": 16,
+    "ref": "PLSP-AP-016",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Academic Honors & Latin Honors Policy",
+    "desc": "DLSP awards Summa Cum Laude, Magna Cum Laude, Cum Laude, and With Academic Distinction to qualifying graduates based on GWA, no failed/dropped grades, and finishing within prescribed curriculum years.",
+    "summary": "Summa Cum Laude = 1.00–1.25 GWA. Magna = 1.26–1.50. Cum Laude = 1.51–1.75. No INC, DRP, or failing grade allowed — ever. Must finish within prescribed years. PE and NSTP not counted in GWA.",
+    "full": "Section 26. Academic Honors and Awards\n\n26.1. Academic Honors\n\n26.1.1. The appropriate graduation honors and the general weighted average (GWA) and the prescribed minimum final ratings in every subject for the entire duration of the program or course shall be:\n\nHONORS               |  Final Rating\nSumma Cum Laude      |  1.25 to 1.00 with no grade in any subject below 1.50 or their equivalents,\n(with Highest Honors)|  whether required or not to complete the course\nMagna Cum Laude      |  1.50 to 1.26 with no grade in any subject below 1.75 or their equivalents,\n(with Very High      |  whether required or not to complete the course\n Honors)             |\nCum Laude            |  1.75 to 1.51 with no grade in any subject below 2.00 or their equivalents,\n(with High Honors)   |  whether required or not to complete the course\nWith Academic        |  1.75 or better with no grade in any subject below 2.25 or their equivalents,\nDistinction          |  whether required or not to complete the course\n\n26.1.2. A student who qualifies for honors should have earned the required units in the regular load for each particular semester and must have finished the course within the prescribed curriculum years.\n\n26.1.3. A student for honors should not incur any incomplete grade, dropped or unauthorized withdrawal during the entire prescribed curriculum years.\n\n26.1.4. A transferee may qualify for baccalaureate honors subject to the following conditions:\n    26.1.4.1. he/she have taken in DLSP 75 percent of all the required subjects needed to finish the course;\n    26.1.4.2. he/she satisfies provisions 1, 2, and 3 for the policy on Graduation with Honors; and\n    26.1.4.3. his/her grades in his/her previous school shall be included in the evaluation and computation.\n\n26.1.5. In the computation of the GWA of students who are candidates for graduation with honors, subjects such as Physical Education (PE), National Service Training Program (NSTP), Euthenics and other similar subjects, shall not be included, but the candidates must not receive a grade lower than \"2.00\" in all subjects to qualify for graduation with honors.\n\n26.3. Dean's List Awards\n\n26.3.1. GWA Tuition Fee Discount: 1.00–1.49 = 100%; 1.50–1.75 = 50%.\n\n26.3.2. Dean's listers shall satisfy both of the following qualifications:\n    a. He/she has no grade lower than 2.00, dropped or incomplete during the semester.\n    b. He/she is a regular student and carries the prescribed regular load of the program enrolled in.\n\n26.3.3. The tuition fee discount shall be availed of only on the immediate succeeding semester. Otherwise, it is forfeited.",
+    "steps": [
+      "Maintain your GWA from first year — even one low grade in any subject (whether major or minor) can disqualify you from honors.",
+      "Never drop a subject, take an INC, or get an unauthorized withdrawal during your entire program — these disqualify you from any latin honor.",
+      "Enroll only the regular prescribed load each semester — overloading or irregular enrollment may affect your eligibility.",
+      "Apply to the College Registrar to be included in the list of candidates for graduation honors, on or before the deadline.",
+      "For Dean's List: make sure you carry the full prescribed load with no grade below 2.00, no INC, and no DRP per semester.",
+      "Dean's List tuition discount applies to the immediately succeeding semester only — use it right away."
+    ],
+    "related": [
+      15,
+      10,
+      11
+    ]
+  },
+  {
+    "id": 17,
+    "ref": "PLSP-AP-017",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "Refund of Tuition Fees Policy",
+    "desc": "Students who withdraw from the College may be eligible for a tuition fee refund based on how many days after the opening of classes they withdraw. Refunds follow a declining schedule.",
+    "summary": "Withdraw before classes open = 100% refund. After day 1 = 70%. Day 2 = 50%. Day 3 = 30%. Day 4 onward = no refund. In case of death or permanent disability, all fees (except registration) are refunded.",
+    "full": "Section 17. Refund of Fees\n\nTuition Fees are payable in cash. Fees are on a semestral basis where tuition fees are paid in full for a semester, and such fees may be refunded to a student who withdraws from the College under the following conditions:\n\nA student who has paid his matriculation fees but decided to withdraw his registration or enrolment may be granted an honorable dismissal or a leave of absence as well as a refund of tuition fee only according to the following schedule:\n\nBefore the opening of classes                      — 100% refund\nWithin the first day after the opening of classes  — 70% refund\nWithin the second day after the opening of classes — 50% refund\nWithin the third day after the opening of classes  — 30% refund\nWithin the fourth day of the opening of classes    — No refund\n\nIn the case of a student who withdraws before the opening of classes or those who registers after the opening of classes and withdraws, thereafter, the number of days shall be counted from the actual date of registration; provided, further, that in case of death/permanent disability leading to inability to finish his studies during the semester, all the fees may be refunded, excluding the registration fee.",
+    "steps": [
+      "Decide to withdraw as early as possible — the refund decreases drastically each day after classes open.",
+      "Go to the Registrar's Office and process your withdrawal or request a Leave of Absence.",
+      "Ask for your Honorable Dismissal Certificate from the Registrar if you are transferring to another school.",
+      "Submit the refund request to the Finance Office along with proof of enrollment and official withdrawal.",
+      "For cases involving death or permanent disability, submit the relevant supporting documents (death certificate, medical certificate) to claim a full tuition refund (minus the registration fee)."
+    ],
+    "related": [
+      13,
+      15,
+      12
+    ]
+  },
+  {
+    "id": 18,
+    "ref": "PLSP-CD-018",
+    "catK": "discipline",
+    "cat": "Campus Discipline",
+    "title": "Anti-Sexual Harassment Policy",
+    "desc": "DLSP prohibits all forms of sexual harassment — from grave offenses (sexual assault) to less grave (verbal abuse with sexual overtones) to light offenses (sexist jokes, malicious ogling) — by any member of the campus community.",
+    "summary": "Sexual harassment by anyone — faculty, staff, or students — is strictly prohibited. It ranges from grave (sexual assault) to light (sexist jokes). Report formally to the CODI. Students may be expelled for grave offenses.",
+    "full": "Annex A. Implementing Rules and Regulations of the Anti-Sexual Harassment Act of 1995\n(Pursuant to Republic Act No. 7877)\n\nSection 1. Affirmation of Policy — DLSP shall establish and maintain an intellectual and moral environment in which the dignity and worth of all members of the academic community are guaranteed full respect. The College affirms its commitment to provide a secure and conducive learning and working environment free from sexual harassment and all forms of sexual intimidation and exploitation.\n\nSection 3. Sexual Harassment Defined —\n\n(a) Sexual Harassment is committed by an officer, faculty member, employee, coach, trainer, or any person who having authority, influence or moral ascendancy over another in any aspect of academic or administrative work in any office or classroom of the College demands, requests or otherwise requires any sexual favor from the other, without regard as to whether such demand, request or requirement is accepted by the latter.\n\nSection 4. Classification of Offenses:\n\nA. Grave offenses include: unwarranted touching of private parts of the body (genitalia, buttocks, and breast); sexual assault; malicious touching; requesting for sexual favor in exchange for employment, promotion, a passing grade, the granting of honors or scholarship, or the grant of benefits or payment of a stipend or allowance.\n\nB. Less Grave offenses include: unwanted touching or brushing against a victim's body; pinching not falling under grave offenses; derogatory or degrading remarks or innuendoes directed toward the members of one sex or one's sexual orientation; verbal abuse or threats with sexual overtones.\n\nC. Light offenses include: surreptitiously looking at a person's private part or worn undergarments; telling sexist/smutty jokes or sending these through text or electronic mail; malicious leering or ogling; display of sexually offensive pictures, materials or graffiti; unwelcome sexual flirtation, advances, or propositions; persistent unwanted attention with sexual overtones.\n\nSection 10.6. Penalties:\n• For light offenses: 1st offense — Reprimand; 2nd offense — Suspension up to 30 days; 3rd offense — Dismissal.\n• For less grave offenses: 1st offense — Suspension 30 days to 6 months; 2nd offense — Dismissal.\n• For grave misconduct: Dismissal and permanent disqualification from government employment.\n• For students: Suspension of 1–30 days for simple misconduct; 3rd finding = Expulsion. Grave misconduct = Expulsion.",
+    "steps": [
+      "If you are a victim, document the incident immediately — date, time, location, witness names, and a description of what happened.",
+      "You may report informally through counseling at the Guidance Office, or formally through a written complaint to the Committee on Decorum and Investigation (CODI) under the VPAA.",
+      "File a formal written, signed, and sworn complaint containing: your full name and address, the respondent's full name and address, the charges, and a statement of relevant facts.",
+      "The CODI will determine if probable cause exists. If yes, a Hearing Committee is constituted.",
+      "The respondent has at least 72 hours to file a written answer. A formal hearing must conclude within 30 days of the filing of charges.",
+      "Retaliation against a complainant is itself a disciplinary offense. You are protected for reporting."
+    ],
+    "related": [
+      5,
+      6,
+      19
+    ]
+  },
+  {
+    "id": 19,
+    "ref": "PLSP-AP-019",
+    "catK": "academic",
+    "cat": "Academic Policies",
+    "title": "NSTP & Physical Education Requirements",
+    "desc": "All college students must complete two years of basic Physical Education (PE) and six units of National Service Training Program (NSTP) before being allowed to enroll in third year.",
+    "summary": "You cannot enroll in 3rd year without completing 2 years of PE and 6 units of NSTP. NSTP units do NOT count toward your GWA. Students with religious objections still need to enroll but are given alternative tasks.",
+    "full": "Section 22. Completion of Basic Courses in NSTP and P.E.\n\nNo college student shall be permitted to enroll in the third year unless he/she has completed the two-year basic course in P.E., and six (6) units in National Service Welfare Training Service, or unless said student has been duly granted permission to defer the taking of the course by authorities concerned.\n\nAll students are required under the law to enroll in NSTP or its equivalent and shall not be allowed to cross-enroll for NSTP in any other institution unless given expressed permission by the Head of ROTC, CWTS, LTS and approved by the Department Dean. Students who are under restriction for reason of religious beliefs are also required to enroll in P.E. and/or NSTP. However, these students shall be given special tasks or assignments.\n\n22.1. Duration and Equivalent course unit of NSTP:\n• Each of the NSTP components shall be undertaken for an academic period of two (2) semesters.\n• It shall be credited for three (3) units per semester, for fifty-four (54) to ninety (90) training hours each semester.\n• Students enrolled in any program component shall not be allowed to shift to other component.\n• Earned NSTP units shall not be included in the computation of Grade Point Average (GPA) grades of college graduating students.\n\n22.2. Incentives:\n• The College may provide scholarship and other forms of assistance and incentives to qualified and deserving NSTP students, the funding of which shall come from available NSTP funds of the College.\n\n22.3. Organization of NSTP Graduates:\n• Graduates of the non-ROTC components of the NSTP shall belong to the National Service Reserve Corps (NSRC).\n• Graduates of the ROTC program shall form part of the citizen Armed Forces pursuant to RA 7077.",
+    "steps": [
+      "Choose your NSTP component (ROTC, CWTS, or LTS) in your first year — you cannot switch once enrolled.",
+      "Enroll in PE every semester in your first two years. Failing to do so may block your promotion to third year.",
+      "Track your NSTP units — you need 6 total (3 units per semester × 2 semesters). Your NSTP grade does NOT affect your GWA.",
+      "If your religion prohibits participation in certain NSTP/PE activities, inform your Department Dean in writing — alternative tasks will be assigned.",
+      "Do not attempt to cross-enroll in NSTP at another school without written permission from the NSTP Head and your Department Dean."
+    ],
+    "related": [
+      15,
+      14,
+      10
+    ]
+  },
+  {
+    "id": 20,
+    "ref": "PLSP-RR-020",
+    "catK": "rights",
+    "cat": "Rights & Responsibilities",
+    "title": "Student Data Privacy & Data Protection Policy",
+    "desc": "Under RA 10173 (Data Privacy Act of 2012), all student records and personal documents are protected. No personal data may be released without the student's written consent or a Court Order.",
+    "summary": "Your personal data and school records are protected by law. DLSP cannot release them without your written consent. Absent students must authorize a representative in writing. Third parties need a Court Order.",
+    "full": "Section 32. Student Data Privacy and Data Protection\n\nAll documents submitted by students in the College shall be protected under Republic Act No. 10173, otherwise known as the Data Privacy Act of 2012 (An Act Protecting Individual Personal Information and Communications System in the Government and the Private Sector, Creating for this Purpose a National Privacy Commission, and for other purposes).\n\nAny request to be released of his/her personal data/document whether hardcopy and/or an electronic data shall be with written consent of the student (data owner).\n\nOn the other hand, in absentia, the student request for release of his/her personal data/documents through an authorization letter stating the relationship of the bearer of the letter and waiving his/her right in favor of the latter.\n\nOther requesting parties who want to secure a copy of personal data/documents of the DLSP student shall submit a copy of a Court Order to the concerned Office.",
+    "steps": [
+      "To request your own records (TOR, grades, certifications), go to the Registrar's Office and present a valid ID. You will need to sign a request form.",
+      "If you cannot personally pick up your documents, write an Authorization Letter stating the representative's name, their relationship to you, and that you are authorizing them to receive the documents on your behalf.",
+      "If a third party (employer, government agency, etc.) requests your records without your authorization, they must present a Court Order to the Registrar.",
+      "If you believe your data privacy has been violated, you may file a complaint with the National Privacy Commission (privacy.gov.ph) or raise it with the DLSP administration."
+    ],
+    "related": [
+      6,
+      15,
+      18
+    ]
+  }
+]
