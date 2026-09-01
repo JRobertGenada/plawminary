@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useComments } from '../hooks/useComments';
 
@@ -43,6 +43,7 @@ export default function CommentsPanel({ sectionId, sectionTitle }) {
   const { user, isLoggedIn } = useAuth();
   const { comments, addComment, toggleAgree } = useComments(sectionId);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [text, setText]       = useState('');
   const [type, setType]       = useState('policy');
@@ -147,7 +148,7 @@ export default function CommentsPanel({ sectionId, sectionTitle }) {
             <div style={{ fontSize: '.925rem', fontWeight: 700, color: 'var(--g-dark)', marginBottom: 3 }}>Sign in to leave feedback</div>
             <div style={{ fontSize: '.82rem', color: 'var(--gray-t)' }}>Only verified PLSP students can submit comments and suggestions on policies.</div>
           </div>
-          <button onClick={() => navigate('/login', { state: { from: '/handbook' } })} style={{
+          <button onClick={() => navigate('/login', { state: { from: location.pathname } })} style={{
             padding: '9px 20px', borderRadius: 8, border: 'none', background: 'var(--g-primary)',
             color: '#fff', fontWeight: 700, fontSize: '.85rem', cursor: 'pointer',
             fontFamily: '"Plus Jakarta Sans",sans-serif', flexShrink: 0,

@@ -8,7 +8,7 @@ export default function LoginPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from || '/handbook';
+  const from = location.state?.from || '/';
 
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
