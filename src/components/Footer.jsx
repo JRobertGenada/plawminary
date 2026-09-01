@@ -22,7 +22,7 @@ export default function Footer() {
           <div>
             <h4 style={{ fontSize: '.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gold)', marginBottom: 14 }}>Quick Links</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {[['/', 'Home'], ['/ordinances', 'Ordinance Finder'], ['/handbook', 'PLSP Handbook'], ['/admin', 'Admin Panel']].map(([to, label]) => (
+              {[['/', 'Home'], ['/ordinances', 'Ordinance Finder'], ['/handbook', 'PLSP Handbook']].map(([to, label]) => (
                 <li key={to} style={{ marginBottom: 10 }}>
                   <Link to={to} style={{ fontSize: '.875rem', color: 'rgba(255,255,255,.75)', textDecoration: 'none', transition: 'all .2s' }}
                     onMouseEnter={e => e.target.style.color = 'var(--gold)'}
