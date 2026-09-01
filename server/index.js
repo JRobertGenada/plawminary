@@ -82,9 +82,17 @@ async function startServer() {
     }
   });
 
-  // ─── 404 handler ──────────────────────────────────────────────────────────
+  // ─── 404 handler for API routes ───────────────────────────────────────────
   app.use('/api/*', (req, res) => {
     res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
+  });
+
+  // ─── Static Files & SPA Fallback ──────────────────────────────────────────
+  const distPath = path.join(__dirname, '../dist');
+  app.use(express.static(distPath));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 
   // ─── Error handler ─────────────────────────────────────────────────────────
@@ -94,8 +102,8 @@ async function startServer() {
   });
 
   // ─── Start ─────────────────────────────────────────────────────────────────
-  app.listen(PORT, () => {
-    console.log(`\n🏛️  Plawminary API running at http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🏛️  Plawminary API running at http://0.0.0.0:${PORT}`);
     console.log(`   Database: MySQL (${config.host}:${config.port}/${config.database})`);
     console.log(`   Health:   http://localhost:${PORT}/api/health`);
     console.log(`\n   Endpoints:`);
