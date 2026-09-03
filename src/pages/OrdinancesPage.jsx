@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, ChevronRight, ChevronLeft, Filter, SortAsc, X, LayoutGrid, List, BookOpen, Users, Scale, Award, ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { Search, ChevronRight, ChevronLeft, Filter, SortAsc, X, LayoutGrid, List, BookOpen, Users, Scale, Award, ArrowLeft, SlidersHorizontal, Sparkles, TrendingUp } from 'lucide-react';
 import { BADGE_MAP } from '../data/ordinances';
-import { searchOrdinances } from '../utils/searchUtility';
+import { searchOrdinances, isScenarioQuery } from '../utils/searchUtility';
 import { api } from '../hooks/useApi';
 
 function Badge({ catK, cat }) {
@@ -87,6 +87,9 @@ export default function OrdinancesPage() {
     return d;
   }, [ordinances, activeCat, searchQ, sort]);
 
+  // Detect scenario-style query for UI treatment
+  const scenarioMode = useMemo(() => isScenarioQuery(searchQ), [searchQ]);
+
   const totalPages = Math.max(1, Math.ceil(results.length / itemsPerPage));
 
   const paginatedResults = useMemo(() => {
@@ -159,7 +162,7 @@ export default function OrdinancesPage() {
                     type="text"
                     value={searchQ}
                     onChange={e => setSearchQ(e.target.value)}
-                    placeholder="Search by title, keyword, or situation…"
+                    placeholder="Search by title, keyword, or describe your situation…"
                     style={{
                       width: '100%',
                       border: 'none',
@@ -316,6 +319,21 @@ export default function OrdinancesPage() {
                     Showing <strong style={{ color: 'var(--g-dark)', fontWeight: 800 }}>{results.length === 0 ? 0 : `${startIdx}–${endIdx}`}</strong> of <strong style={{ color: 'var(--g-dark)', fontWeight: 800 }}>{results.length}</strong> policies
                     {searchQ && <span> matching "<strong>{searchQ}</strong>"</span>}
                   </div>
+
+                  {/* Scenario mode badge */}
+                  {scenarioMode && searchQ && (
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '5px 12px', borderRadius: 999,
+                      background: 'linear-gradient(135deg,#4F46E5,#7C3AED)',
+                      color: '#fff', fontSize: '.72rem', fontWeight: 700,
+                      letterSpacing: '.04em', textTransform: 'uppercase',
+                      boxShadow: '0 2px 8px rgba(79,70,229,.3)',
+                    }}>
+                      <Sparkles size={12} />
+                      Scenario Search
+                    </div>
+                  )}
                   
                   <div className="flex items-center flex-wrap gap-2.5">
                     {/* View Mode Toggle */}
@@ -416,6 +434,22 @@ export default function OrdinancesPage() {
                               </p>
                             </div>
 
+                            {/* Relevance chip — shown only in scenario search mode */}
+                            {scenarioMode && o.relevanceLabel && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  padding: '3px 10px', borderRadius: 999,
+                                  fontSize: '.7rem', fontWeight: 700,
+                                  background: o.relevanceLabel === 'High' ? '#D1FAE5' : o.relevanceLabel === 'Medium' ? '#FEF3C7' : '#F3F4F6',
+                                  color: o.relevanceLabel === 'High' ? '#065F46' : o.relevanceLabel === 'Medium' ? '#92400E' : '#6B7280',
+                                }}>
+                                  <TrendingUp size={10} />
+                                  {o.relevanceLabel} Match
+                                </div>
+                              </div>
+                            )}
+
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4 }}>
                               <button onClick={() => handleOrdinanceClick(o.id)}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, fontWeight: 800, fontSize: '.82rem', border: 'none', background: 'var(--g-dark)', color: '#fff', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', transition: 'all .2s ease' }}
@@ -439,6 +473,19 @@ export default function OrdinancesPage() {
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                                 <Badge catK={o.catK} cat={o.cat} />
                                 <span style={{ fontSize: '.75rem', color: 'var(--gray-t)', fontWeight: 600, background: 'var(--gray-bg)', padding: '2px 6px', borderRadius: 6 }}>{o.ref}</span>
+                                {/* Relevance chip in list mode */}
+                                {scenarioMode && o.relevanceLabel && (
+                                  <div style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    padding: '2px 8px', borderRadius: 999,
+                                    fontSize: '.68rem', fontWeight: 700,
+                                    background: o.relevanceLabel === 'High' ? '#D1FAE5' : o.relevanceLabel === 'Medium' ? '#FEF3C7' : '#F3F4F6',
+                                    color: o.relevanceLabel === 'High' ? '#065F46' : o.relevanceLabel === 'Medium' ? '#92400E' : '#6B7280',
+                                  }}>
+                                    <TrendingUp size={9} />
+                                    {o.relevanceLabel}
+                                  </div>
+                                )}
                               </div>
                               <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--g-dark)', margin: '0 0 4px 0', lineHeight: 1.35 }}>{o.title}</h3>
                               <p style={{ fontSize: '.84rem', color: 'var(--gray-t)', margin: 0, lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{o.desc}</p>

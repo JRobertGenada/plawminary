@@ -129,6 +129,35 @@ async function initDb() {
       }
     }
 
+    // ── Table-level migrations (idempotent CREATE TABLE IF NOT EXISTS) ─────────
+    const tableMigrations = [
+      {
+        name: 'policy_scenarios',
+        sql: `
+          CREATE TABLE IF NOT EXISTS policy_scenarios (
+            id         INT AUTO_INCREMENT PRIMARY KEY,
+            policy_id  INT NOT NULL,
+            scenario   TEXT NOT NULL,
+            keywords   JSON NULL,
+            synonyms   JSON NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_ps_policy (policy_id),
+            CONSTRAINT fk_ps_policy FOREIGN KEY (policy_id)
+              REFERENCES ordinances(id) ON DELETE CASCADE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `,
+      },
+    ];
+
+    for (const tm of tableMigrations) {
+      try {
+        await initConn.query(tm.sql);
+        console.log(`  ✓ Table '${tm.name}' ensured`);
+      } catch (e) {
+        console.warn(`  ⚠️ Table migration '${tm.name}' failed:`, e.message);
+      }
+    }
+
     await initConn.end();
 
     console.log(

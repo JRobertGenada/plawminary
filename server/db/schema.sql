@@ -80,3 +80,16 @@ CREATE TABLE IF NOT EXISTS versions (
   release_date DATE NOT NULL,
   created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── Policy Scenarios — one or more student-situation phrases per ordinance ────
+-- Used by Fuse.js client-side scenario search.  No AI/external API needed.
+CREATE TABLE IF NOT EXISTS policy_scenarios (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  policy_id  INT NOT NULL,
+  scenario   TEXT NOT NULL,                -- natural-language student situation
+  keywords   JSON NULL,                   -- ["threat","bully","insult",...]
+  synonyms   JSON NULL,                   -- ["intimidation","verbal abuse",...]
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ps_policy (policy_id),
+  CONSTRAINT fk_ps_policy FOREIGN KEY (policy_id) REFERENCES ordinances(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

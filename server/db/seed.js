@@ -45,6 +45,19 @@ function loadOrdinancesFromFile() {
   return fn();
 }
 
+function loadScenariosFromFile() {
+  const filePath = path.join(__dirname, '../../src/data/policyScenarios.js');
+  if (!fs.existsSync(filePath)) {
+    console.log('   policyScenarios.js not found, skipping scenario seed.');
+    return [];
+  }
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const match = raw.match(/export\s+const\s+POLICY_SCENARIOS\s*=\s*(\[[\s\S]*\]);?\s*$/m);
+  if (!match) throw new Error('Could not parse policyScenarios.js');
+  const fn = new Function(`return ${match[1]}`);
+  return fn();
+}
+
 async function seed() {
   console.log('🌱 Starting MySQL seed...');
 
@@ -107,6 +120,31 @@ async function seed() {
   } catch (err) {
     console.error('⚠️  Could not auto-load ordinances:', err.message);
     console.log('   Skipping ordinances — add them manually via Admin panel.');
+  }
+
+  // ─── Seed Scenarios ───
+  try {
+    const scenarios = loadScenariosFromFile();
+    console.log(`📌 Seeding ${scenarios.length} policy scenarios...`);
+    for (const s of scenarios) {
+      await pool.query(`
+        INSERT INTO policy_scenarios (policy_id, scenario, keywords, synonyms)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          scenario = VALUES(scenario),
+          keywords = VALUES(keywords),
+          synonyms = VALUES(synonyms)
+      `, [
+        s.policy_id,
+        s.scenario,
+        JSON.stringify(s.keywords || []),
+        JSON.stringify(s.synonyms || []),
+      ]);
+    }
+    console.log(`   ✓ ${scenarios.length} scenarios seeded`);
+  } catch (err) {
+    console.warn('⚠️  Could not seed scenarios:', err.message);
+    console.log('   Skipping scenarios — run seed again after migration completes.');
   }
 
   // ─── Seed Versions ───

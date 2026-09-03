@@ -8,7 +8,7 @@ const { requireAdmin } = require('../middleware/auth');
 module.exports = (db) => {
 
   // Helper: parse stored JSON columns back into arrays
-  function parseOrdinance(row) {
+  function parseOrdinance(row, scenarioRows) {
     if (!row) return null;
 
     let steps = [];
@@ -25,6 +25,13 @@ module.exports = (db) => {
       related = row.related;
     }
 
+    // Parse scenario rows — each has scenario (string), keywords (JSON array), synonyms (JSON array)
+    const scenarios = (scenarioRows || []).map(s => ({
+      scenario: s.scenario || '',
+      keywords: Array.isArray(s.keywords) ? s.keywords : (() => { try { return JSON.parse(s.keywords || '[]'); } catch { return []; } })(),
+      synonyms: Array.isArray(s.synonyms) ? s.synonyms : (() => { try { return JSON.parse(s.synonyms || '[]'); } catch { return []; } })(),
+    }));
+
     return {
       id:        row.id,
       ref:       row.ref,
@@ -36,11 +43,39 @@ module.exports = (db) => {
       full:      row.full_text,
       steps,
       related,
+      scenarios,
       handbookSectionId: row.handbook_section_id,
       status:    row.status || 'published',
       updatedBy: row.updated_by || '',
       updatedAt: row.updated_at,
     };
+  }
+
+  // Helper: fetch all scenarios for a set of ordinance ids in one query
+  async function fetchScenarios(db, ids) {
+    if (!ids || ids.length === 0) return {};
+    const placeholders = ids.map(() => '?').join(',');
+    let rows;
+    try {
+      [rows] = await db.query(
+        `SELECT policy_id, scenario, keywords, synonyms
+         FROM policy_scenarios
+         WHERE policy_id IN (${placeholders})
+         ORDER BY policy_id, id`,
+        ids
+      );
+    } catch (err) {
+      // Table may not exist yet (first boot before migration) — degrade gracefully
+      console.warn('[ordinances] policy_scenarios not available yet:', err.message);
+      rows = [];
+    }
+    // Group by policy_id
+    const map = {};
+    for (const row of rows) {
+      if (!map[row.policy_id]) map[row.policy_id] = [];
+      map[row.policy_id].push(row);
+    }
+    return map;
   }
 
   // GET /api/ordinances — list all (optionally filter by catK or search)
@@ -66,7 +101,11 @@ module.exports = (db) => {
         [rows] = await db.query(`SELECT * FROM ordinances WHERE 1=1 ${statusFilter} ORDER BY id`);
       }
 
-      res.json(rows.map(parseOrdinance));
+      // Attach scenario data for Fuse.js scenario-search on the client
+      const ids = rows.map(r => r.id);
+      const scenarioMap = await fetchScenarios(db, ids);
+
+      res.json(rows.map(r => parseOrdinance(r, scenarioMap[r.id] || [])));
     } catch (err) {
       next(err);
     }
@@ -77,7 +116,8 @@ module.exports = (db) => {
     try {
       const [rows] = await db.query('SELECT * FROM ordinances WHERE id = ?', [req.params.id]);
       if (!rows.length) return res.status(404).json({ error: 'Ordinance not found' });
-      res.json(parseOrdinance(rows[0]));
+      const scenarioMap = await fetchScenarios(db, [rows[0].id]);
+      res.json(parseOrdinance(rows[0], scenarioMap[rows[0].id] || []));
     } catch (err) {
       next(err);
     }
