@@ -1,4 +1,5 @@
 import Fuse from 'fuse.js';
+import { POLICY_SCENARIOS } from '../data/policyScenarios.js';
 
 const STOPWORDS = new Set([
   'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren\'t', 'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by', 'can\'t', 'cannot', 'could', 'couldn\'t', 'did', 'didn\'t', 'do', 'does', 'doesn\'t', 'doing', 'don\'t', 'down', 'during', 'each', 'few', 'for', 'from', 'further', 'had', 'hadn\'t', 'has', 'hasn\'t', 'have', 'haven\'t', 'having', 'he', 'he\'d', 'he\'ll', 'he\'s', 'her', 'here', 'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'how\'s', 'i', 'i\'d', 'i\'ll', 'i\'m', 'i\'ve', 'if', 'in', 'into', 'is', 'isn\'t', 'it', 'it\'s', 'its', 'itself', 'let\'s', 'me', 'more', 'most', 'mustn\'t', 'my', 'myself', 'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own', 'same', 'shan\'t', 'she', 'she\'d', 'she\'ll', 'she\'s', 'should', 'shouldn\'t', 'so', 'some', 'such', 'than', 'that', 'that\'s', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'there\'s', 'these', 'they', 'they\'d', 'they\'ll', 'they\'re', 'they\'ve', 'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'wasn\'t', 'we', 'we\'d', 'we\'ll', 'we\'re', 'we\'ve', 'were', 'weren\'t', 'what', 'what\'s', 'when', 'when\'s', 'where', 'where\'s', 'which', 'while', 'who', 'who\'s', 'whom', 'why', 'why\'s', 'with', 'won\'t', 'would', 'wouldn\'t', 'you', 'you\'d', 'you\'ll', 'you\'re', 'you\'ve', 'your', 'yours', 'yourself', 'yourselves'
@@ -66,9 +67,22 @@ const SYNONYM_MAP = {
   'suspended': ['suspension', 'disciplinary', 'sanction'],
 };
 
+const GENERIC_WORDS = new Set([
+  'student', 'students', 'campus', 'school', 'inside', 'class', 'classes', 'classroom',
+  'policy', 'policies', 'ordinance', 'ordinances', 'university', 'college',
+  'what', 'can', 'how', 'when', 'where', 'why', 'who', 'someone', 'person', 'people',
+  'tell', 'know', 'want', 'need', 'get', 'getting', 'got', 'give', 'go', 'going', 'let', 'may',
+  'i', 'me', 'my', 'is', 'am', 'are', 'was', 'were', 'the', 'a', 'an',
+  'enter', 'entering', 'without', 'with', 'come', 'coming', 'caught', 'allow', 'allowed'
+]);
+
 // Create a Fuse instance for fuzzy matching synonym keys
 const synonymKeys = Object.keys(SYNONYM_MAP).map(key => ({ key }));
 const keyFuse = new Fuse(synonymKeys, { keys: ['key'], threshold: 0.3 });
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /**
  * Normalize a user query — lowercase, strip punctuation, collapse whitespace.
@@ -90,9 +104,9 @@ export function normalizeQuery(q) {
  */
 export function isScenarioQuery(q) {
   if (!q) return false;
+  const isRef = /^plsp[-\s]?\w+[-\s]?\d+$/i.test(q.trim());
   const normalized = normalizeQuery(q);
   const words = normalized.split(/\s+/).filter(Boolean);
-  const isRef = /^plsp-\w+-\d+$/i.test(normalized.replace(/\s/g, ''));
   return words.length >= 3 && !isRef;
 }
 
@@ -148,10 +162,17 @@ function getSynonyms(word) {
     }
   }
 
-  // 3. Reverse lookup
+  // 3. Reverse lookup with stem support
+  const stems = [word];
+  for (const suffix of suffixes) {
+    if (word.endsWith(suffix) && word.length > suffix.length + 2) {
+      stems.push(word.slice(0, -suffix.length));
+    }
+  }
   Object.entries(SYNONYM_MAP).forEach(([root, list]) => {
-    if (list.includes(word)) {
+    if (stems.some(s => list.includes(s) || s === root)) {
       synonyms.push(root);
+      synonyms = synonyms.concat(list);
     }
   });
 
@@ -170,52 +191,218 @@ export function getRelevanceLabel(score) {
 }
 
 /**
+ * Multi-signal Scenario Search Ranking
+ * Signals & weights:
+ *   1. Scenario/example match: 40% (0.40)
+ *   2. Scenario keywords: 25% (0.25)
+ *   3. Synonym/concept match: 20% (0.20)
+ *   4. Title/ref/category: 10% (0.10)
+ *   5. Summary/description/full text: 5% (0.05)
+ */
+function scoreScenarioSearch(data, query) {
+  const normalized = normalizeQuery(query);
+  const allTokens = normalized.split(/\s+/).filter(Boolean);
+  const nonStopwords = allTokens.filter(w => !STOPWORDS.has(w));
+  const queryWords = nonStopwords.length > 0 ? nonStopwords : allTokens;
+
+  // Identify meaningful concepts & weights
+  const wordEntries = queryWords.map(w => {
+    const isGeneric = GENERIC_WORDS.has(w);
+    const weight = isGeneric ? 0.15 : 1.0;
+    const syns = getSynonyms(w);
+    return { word: w, isGeneric, weight, synonyms: syns };
+  });
+
+  const specificWords = wordEntries.filter(e => !e.isGeneric);
+  const specificBaseWeight = specificWords.reduce((sum, e) => sum + e.weight, 0) || 1.0;
+  const totalBaseWeight = wordEntries.reduce((sum, e) => sum + e.weight, 0) || 1.0;
+
+  // Multi-word phrases from query (n-grams)
+  const phrases = [];
+  const seenPhrases = new Set();
+  function addPhrase(p) {
+    const clean = p.toLowerCase().trim();
+    if (!clean || seenPhrases.has(clean) || clean.split(/\s+/).length < 2) return;
+    seenPhrases.add(clean);
+    const words = clean.split(/\s+/);
+    const hasSpecific = words.some(w => !GENERIC_WORDS.has(w) && !STOPWORDS.has(w));
+    phrases.push({ phrase: clean, weight: hasSpecific ? 2.5 : 0.3 });
+  }
+
+  for (let i = 0; i < allTokens.length - 1; i++) {
+    addPhrase(allTokens[i] + ' ' + allTokens[i + 1]);
+    if (i < allTokens.length - 2) {
+      addPhrase(allTokens[i] + ' ' + allTokens[i + 1] + ' ' + allTokens[i + 2]);
+    }
+  }
+  for (let i = 0; i < nonStopwords.length - 1; i++) {
+    addPhrase(nonStopwords[i] + ' ' + nonStopwords[i + 1]);
+  }
+  const phraseSyns = extractPhraseSynonyms(normalized);
+  phraseSyns.forEach(p => addPhrase(p));
+
+  // Calculate field match score in [0, 1] where 0 = perfect match, 1 = no match
+  function calculateFieldScore(textList) {
+    if (!textList || textList.length === 0) return 1.0;
+    const items = textList.filter(Boolean).map(t => ({ text: t.toLowerCase() }));
+    if (items.length === 0) return 1.0;
+
+    const fuse = new Fuse(items, {
+      keys: ['text'],
+      includeScore: true,
+      threshold: 0.35,
+      ignoreLocation: true
+    });
+
+    const combinedText = ' ' + items.map(i => i.text.replace(/[^\w\s.%]/g, ' ').replace(/\s+/g, ' ')).join(' \n ') + ' ';
+
+    function testWordOrPhrase(target) {
+      if (!target || target.length < 2) return 0;
+      const escaped = escapeRegex(target);
+      const regex = new RegExp('(?:^|\\s)' + escaped + '(?:$|\\s)', 'i');
+      if (regex.test(combinedText)) return 1.0;
+      const fRes = fuse.search(target);
+      if (fRes.length > 0 && fRes[0].score <= 0.35) {
+        return 1.0 - fRes[0].score;
+      }
+      return 0;
+    }
+
+    let matchedWeight = 0;
+    let specificMatched = 0;
+
+    wordEntries.forEach(entry => {
+      let q = testWordOrPhrase(entry.word);
+      if (q > 0) {
+        matchedWeight += entry.weight * q;
+        if (!entry.isGeneric) specificMatched += q;
+      } else if (entry.synonyms && entry.synonyms.length > 0) {
+        let bestSynQ = 0;
+        for (const syn of entry.synonyms) {
+          const sq = testWordOrPhrase(syn);
+          if (sq > bestSynQ) bestSynQ = sq;
+        }
+        if (bestSynQ > 0) {
+          matchedWeight += entry.weight * 0.85 * bestSynQ;
+          if (!entry.isGeneric) specificMatched += 0.85 * bestSynQ;
+        }
+      }
+    });
+
+    // Check multi-word phrase matches
+    let phraseBonus = 0;
+    phrases.forEach(p => {
+      const pq = testWordOrPhrase(p.phrase);
+      if (pq > 0) {
+        phraseBonus += p.weight * 0.5 * pq;
+      }
+    });
+
+    const denominator = specificWords.length > 0 ? specificBaseWeight : totalBaseWeight;
+    let rawRatio = (matchedWeight + phraseBonus) / denominator;
+
+    // Penalize if specific concepts exist in query but none matched in this field
+    if (specificWords.length > 0 && specificMatched === 0) {
+      rawRatio *= 0.15;
+    }
+
+    const cappedRatio = Math.min(1.0, Math.max(0.0, rawRatio));
+    return 1.0 - cappedRatio; // 0 = best, 1 = worst
+  }
+
+  const scored = data.map(ordinance => {
+    const scenarios = (ordinance.scenarios && ordinance.scenarios.length > 0)
+      ? ordinance.scenarios
+      : POLICY_SCENARIOS.filter(s => s.policy_id === ordinance.id);
+
+    // 1. Scenario / example match (40%)
+    let bestScenarioScore = 1.0;
+    scenarios.forEach(s => {
+      const score = calculateFieldScore([s.scenario]);
+      if (score < bestScenarioScore) bestScenarioScore = score;
+    });
+
+    // 2. Scenario keywords (25%)
+    let bestKeywordScore = 1.0;
+    scenarios.forEach(s => {
+      const score = calculateFieldScore(s.keywords || []);
+      if (score < bestKeywordScore) bestKeywordScore = score;
+    });
+
+    // 3. Synonym / concept match (20%)
+    let bestSynonymScore = 1.0;
+    scenarios.forEach(s => {
+      const score = calculateFieldScore(s.synonyms || []);
+      if (score < bestSynonymScore) bestSynonymScore = score;
+    });
+
+    // 4. Title / ref / category (10%)
+    const titleScore = calculateFieldScore([ordinance.title, ordinance.ref, ordinance.cat, ordinance.catK]);
+
+    // 5. Summary / description / full text (5%)
+    const bodyScore = calculateFieldScore([ordinance.summary, ordinance.desc, ordinance.full]);
+
+    // Combine signals into final score: 40% + 25% + 20% + 10% + 5% = 100%
+    const finalScore = (
+      0.40 * bestScenarioScore +
+      0.25 * bestKeywordScore +
+      0.20 * bestSynonymScore +
+      0.10 * titleScore +
+      0.05 * bodyScore
+    );
+
+    return {
+      ...ordinance,
+      searchScore: finalScore,
+    };
+  });
+
+  return scored;
+}
+
+/**
  * Enhanced search for Ordinances with Synonym Expansion + Scenario Matching.
  *
- * Fuse.js key weights:
- *   scenarios[].scenario  1.5  ← highest: direct situation phrase
- *   scenarios[].keywords  1.2
- *   scenarios[].synonyms  1.1
- *   title                 1.0
- *   ref                   0.9
- *   summary               0.8
- *   desc                  0.7
- *   full                  0.4
- *
- * Confidence filtering (scenario queries only):
- *   score > 0.55 → hidden (too low confidence)
- *   score 0.40–0.55 → Low
- *   score 0.25–0.40 → Medium
- *   score < 0.25    → High
+ * Scoring:
+ * - Scenario queries: Weighted multi-signal ranking (Scenario: 40%, Keywords: 25%, Synonyms: 20%, Title: 10%, Body: 5%)
+ * - Non-scenario queries: Multi-field Fuse.js matching with improved synonym score merging and exact reference boosting
  */
 export function searchOrdinances(data, query) {
   if (!query) return data;
 
   const normalized = normalizeQuery(query);
-  const words = normalized.split(/\s+/).filter(w => Boolean(w) && !STOPWORDS.has(w));
   const scenarioMode = isScenarioQuery(query);
 
+  if (scenarioMode) {
+    const scored = scoreScenarioSearch(data, query);
+    // Confidence filtering (scenario queries only): score <= 0.55
+    const filtered = scored.filter(r => r.searchScore <= 0.55);
+    // Attach relevance label for UI display
+    const withLabels = filtered.map(r => ({
+      ...r,
+      relevanceLabel: getRelevanceLabel(r.searchScore),
+    }));
+    return withLabels.sort((a, b) => a.searchScore - b.searchScore);
+  }
+
+  // Non-scenario search
   const options = {
     keys: [
-      // Scenario fields — highest weights
       { name: 'scenarios.scenario', weight: 1.5 },
       { name: 'scenarios.keywords', weight: 1.2 },
       { name: 'scenarios.synonyms', weight: 1.1 },
-      // Standard fields
       { name: 'title',   weight: 1.0 },
       { name: 'ref',     weight: 0.9 },
       { name: 'summary', weight: 0.8 },
       { name: 'desc',    weight: 0.7 },
       { name: 'full',    weight: 0.4 },
     ],
-    threshold: scenarioMode ? 0.5 : 0.4,
+    threshold: 0.4,
     includeScore: true,
     ignoreLocation: true,
-    // Allow matching inside nested arrays of objects
     getFn: (obj, path) => {
-      // Custom getter to flatten scenario arrays for Fuse
       if (path[0] === 'scenarios') {
-        const field = path[1]; // 'scenario' | 'keywords' | 'synonyms'
+        const field = path[1];
         if (!Array.isArray(obj.scenarios)) return '';
         return obj.scenarios.map(s => {
           const val = s[field];
@@ -223,7 +410,6 @@ export function searchOrdinances(data, query) {
           return val || '';
         }).join(' ');
       }
-      // Default getter
       let cur = obj;
       for (const key of path) {
         if (cur == null) return '';
@@ -235,20 +421,15 @@ export function searchOrdinances(data, query) {
   };
 
   const fuse = new Fuse(data, options);
-
-  // 1. Search the normalized query first
   const originalResults = fuse.search(normalized);
 
-  // 2. Search synonyms separately to avoid score dilution
   const synonymMatches = [];
-  
-  // Extract multi-word phrase synonyms first
   const phraseSynonyms = extractPhraseSynonyms(normalized);
   phraseSynonyms.forEach(syn => {
     fuse.search(syn).forEach(res => synonymMatches.push(res));
   });
 
-  // Then process individual non-stopword words
+  const words = normalized.split(/\s+/).filter(w => Boolean(w) && !STOPWORDS.has(w));
   words.forEach(word => {
     const syns = getSynonyms(word);
     syns.forEach(syn => {
@@ -256,7 +437,7 @@ export function searchOrdinances(data, query) {
     });
   });
 
-  // 3. Merge and deduplicate — prefer original match score
+  // Merge rule: evaluate all available matches and retain the strongest overall score!
   const mergedMap = new Map();
 
   originalResults.forEach(r => {
@@ -264,28 +445,32 @@ export function searchOrdinances(data, query) {
   });
 
   synonymMatches.forEach(r => {
-    if (!mergedMap.has(r.item.id)) {
-      // Slight penalty for synonym-only hits
-      const penalizedScore = r.score + 0.15;
-      const cutoff = scenarioMode ? 0.55 : 0.55;
-      if (penalizedScore <= cutoff) {
+    const penalizedScore = r.score + 0.15;
+    if (penalizedScore <= 0.6) {
+      if (mergedMap.has(r.item.id)) {
+        const existing = mergedMap.get(r.item.id);
+        // A synonym match CAN improve the existing score!
+        if (penalizedScore < existing.searchScore) {
+          existing.searchScore = penalizedScore;
+        }
+      } else {
         mergedMap.set(r.item.id, { ...r.item, searchScore: penalizedScore });
       }
     }
   });
 
-  // 4. In scenario mode: filter out very low-confidence results
-  let results = Array.from(mergedMap.values());
-  if (scenarioMode) {
-    results = results.filter(r => r.searchScore <= 0.55);
-    // Attach relevance label for UI display
-    results = results.map(r => ({
-      ...r,
-      relevanceLabel: getRelevanceLabel(r.searchScore),
-    }));
+  // Check for exact reference match (e.g. PLSP-SC-001)
+  const cleanQ = query.toLowerCase().replace(/[^\w]/g, '');
+  if (/^plsp\w+\d+$/.test(cleanQ)) {
+    data.forEach(item => {
+      const cleanRef = (item.ref || '').toLowerCase().replace(/[^\w]/g, '');
+      if (cleanRef === cleanQ) {
+        mergedMap.set(item.id, { ...item, searchScore: 0.0 });
+      }
+    });
   }
 
-  return results.sort((a, b) => a.searchScore - b.searchScore);
+  return Array.from(mergedMap.values()).sort((a, b) => a.searchScore - b.searchScore);
 }
 
 /**
