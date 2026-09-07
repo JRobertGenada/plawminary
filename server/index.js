@@ -60,6 +60,7 @@ async function startServer() {
   app.use('/api/progress',   require('./routes/progress')(db));
   app.use('/api/admin',      require('./routes/admin')(db));
   app.use('/api/page-views', require('./routes/pageviews')(db));
+  app.use('/api/ai',         require('./routes/ai')(db));
 
   // Health check
   app.get('/api/health', async (req, res) => {
@@ -112,7 +113,8 @@ async function startServer() {
     console.log(`   GET  /api/ordinances`);
     console.log(`   GET  /api/comments?ordinanceId=1`);
     console.log(`   GET  /api/progress  (auth required)`);
-    console.log(`   GET  /api/admin/stats (admin only)\n`);
+    console.log(`   GET  /api/admin/stats (admin only)`);
+    console.log(`   POST /api/ai/search\n`);
   });
 }
 
