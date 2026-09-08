@@ -80,27 +80,52 @@ module.exports = (db) => {
     return map;
   }
 
-  // GET /api/ordinances — list all (optionally filter by catK or search)
-  // Admin sees all statuses; public only sees 'published'.
+  // GET /api/ordinances — list all (optionally filter by catK, search, or version)
+  // Student-facing handbook/search queries ONLY the ACTIVE version by default.
   router.get('/', async (req, res, next) => {
     try {
-      const { cat, q } = req.query;
+      const { cat, q, version_id, versionId, all } = req.query;
       const isAdmin = req.session?.user?.role === 'admin';
-      const statusFilter = isAdmin ? '' : "AND status = 'published'";
-      let rows;
+      const statusFilter = isAdmin ? '' : "AND o.status = 'published'";
 
+      const targetVersionId = version_id || versionId;
+      let versionFilter = '';
+      const queryParams = [];
+
+      if (targetVersionId) {
+        versionFilter = 'AND o.version_id = ?';
+        queryParams.push(parseInt(targetVersionId, 10));
+      } else if (!isAdmin || all !== 'true') {
+        // Query ONLY the ACTIVE version by default for student-facing search
+        versionFilter = "AND o.version_id = (SELECT id FROM versions WHERE status = 'active' ORDER BY release_date DESC, id DESC LIMIT 1)";
+      }
+
+      let rows;
       if (q) {
         const like = `%${q}%`;
         [rows] = await db.query(`
-          SELECT * FROM ordinances
-          WHERE (title LIKE ? OR summary LIKE ? OR \`desc\` LIKE ? OR full_text LIKE ?)
+          SELECT o.* FROM ordinances o
+          WHERE (o.title LIKE ? OR o.summary LIKE ? OR o.\`desc\` LIKE ? OR o.full_text LIKE ?)
           ${statusFilter}
-          ORDER BY id
-        `, [like, like, like, like]);
+          ${versionFilter}
+          ORDER BY o.page ASC, o.id ASC
+        `, [like, like, like, like, ...queryParams]);
       } else if (cat) {
-        [rows] = await db.query(`SELECT * FROM ordinances WHERE cat_key = ? ${statusFilter} ORDER BY id`, [cat]);
+        [rows] = await db.query(`
+          SELECT o.* FROM ordinances o
+          WHERE o.cat_key = ?
+          ${statusFilter}
+          ${versionFilter}
+          ORDER BY o.page ASC, o.id ASC
+        `, [cat, ...queryParams]);
       } else {
-        [rows] = await db.query(`SELECT * FROM ordinances WHERE 1=1 ${statusFilter} ORDER BY id`);
+        [rows] = await db.query(`
+          SELECT o.* FROM ordinances o
+          WHERE 1=1
+          ${statusFilter}
+          ${versionFilter}
+          ORDER BY o.page ASC, o.id ASC
+        `, queryParams);
       }
 
       // Attach scenario data for Fuse.js scenario-search on the client

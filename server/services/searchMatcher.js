@@ -607,9 +607,12 @@ function searchOrdinancesLocal(data, query, aiTerms = null) {
  * and format them consistently.
  */
 async function getPublishedOrdinancesWithScenarios(db) {
-  const [rows] = await db.query(
-    "SELECT * FROM ordinances WHERE status = 'published' ORDER BY id"
-  );
+  const [rows] = await db.query(`
+    SELECT * FROM ordinances
+    WHERE status = 'published'
+      AND version_id = (SELECT id FROM versions WHERE status = 'active' ORDER BY release_date DESC, id DESC LIMIT 1)
+    ORDER BY page ASC, id ASC
+  `);
 
   if (!rows || rows.length === 0) return [];
 

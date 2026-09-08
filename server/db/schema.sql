@@ -76,9 +76,10 @@ CREATE TABLE IF NOT EXISTS versions (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   label        VARCHAR(128) NOT NULL,
   description  TEXT NOT NULL,
+  change_notes TEXT NULL,
   sections     INT NOT NULL DEFAULT 0,
   file_path    VARCHAR(512) NULL,
-  status       VARCHAR(32) NOT NULL DEFAULT 'inactive',   -- 'active' | 'archived' | 'inactive' | 'processing' | 'review' | 'approved'
+  status       VARCHAR(32) NOT NULL DEFAULT 'draft',   -- 'draft' | 'active' | 'archived'
   edited_by    VARCHAR(255) NOT NULL,
   release_date DATE NOT NULL,
   created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

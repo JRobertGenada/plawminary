@@ -125,6 +125,14 @@ async function initDb() {
           ADD COLUMN file_path VARCHAR(512) NULL
         `,
       },
+      {
+        table: 'versions',
+        column: 'change_notes',
+        sql: `
+          ALTER TABLE versions
+          ADD COLUMN change_notes TEXT NULL
+        `,
+      },
     ];
 
     for (const migration of migrations) {
@@ -180,6 +188,75 @@ async function initDb() {
       } catch (e) {
         console.warn(`  ⚠️ Table migration '${tm.name}' failed:`, e.message);
       }
+    }
+
+    // ── Index & Version Integrity Migrations ─────────────────────────────────
+    try {
+      // 1. Drop global UNIQUE constraint on ordinances.ref if present so versions can hold historical records
+      const [ordIndexes] = await initConn.query('SHOW INDEX FROM ordinances');
+      const hasUniqueRef = ordIndexes.some(idx => idx.Key_name === 'ref' && idx.Non_unique === 0);
+      if (hasUniqueRef) {
+        await initConn.query('ALTER TABLE ordinances DROP INDEX `ref`');
+        console.log('  ✅ Dropped global UNIQUE constraint on ordinances.ref');
+      }
+
+      // 2. Ensure non-unique lookup index on ref
+      const hasRefIndex = ordIndexes.some(idx => idx.Key_name === 'idx_ord_ref' || idx.Key_name === 'ref');
+      if (!hasRefIndex) {
+        await initConn.query('ALTER TABLE ordinances ADD INDEX idx_ord_ref (ref)');
+        console.log('  ✅ Added idx_ord_ref index on ordinances(ref)');
+      }
+
+      // 3. Ensure composite UNIQUE constraint on (ref, version_id)
+      const hasCompositeUnique = ordIndexes.some(idx => idx.Key_name === 'uq_ord_ref_version');
+      if (!hasCompositeUnique) {
+        try {
+          await initConn.query('ALTER TABLE ordinances ADD UNIQUE KEY uq_ord_ref_version (ref, version_id)');
+          console.log('  ✅ Added composite UNIQUE KEY uq_ord_ref_version (ref, version_id)');
+        } catch (e) {
+          console.warn('  ⚠️ Note: composite unique key could not be added:', e.message);
+        }
+      }
+
+      // 4. Normalize legacy 'inactive' versions to 'archived'
+      await initConn.query("UPDATE versions SET status = 'archived' WHERE status = 'inactive'");
+
+      // 5. Ensure single active version: if no active version exists, activate latest; if multiple, archive older ones
+      const [activeVersions] = await initConn.query("SELECT id FROM versions WHERE status = 'active' ORDER BY release_date DESC, id DESC");
+      let activeVersionId = null;
+      if (activeVersions.length > 0) {
+        activeVersionId = activeVersions[0].id;
+        if (activeVersions.length > 1) {
+          const olderIds = activeVersions.slice(1).map(v => v.id);
+          await initConn.query(`UPDATE versions SET status = 'archived' WHERE id IN (?)`, [olderIds]);
+          console.log(`  ✅ Normalized multiple active versions, archived older IDs: ${olderIds.join(', ')}`);
+        }
+      } else {
+        const [latestVersion] = await initConn.query("SELECT id FROM versions ORDER BY release_date DESC, id DESC LIMIT 1");
+        if (latestVersion.length > 0) {
+          activeVersionId = latestVersion[0].id;
+          await initConn.query("UPDATE versions SET status = 'active' WHERE id = ?", [activeVersionId]);
+          console.log(`  ✅ Activated latest version ID ${activeVersionId}`);
+        }
+      }
+
+      // 6. Data reconciliation: attach unassigned ordinances (version_id IS NULL) to active version so they remain accessible
+      if (activeVersionId) {
+        const [orphanResult] = await initConn.query(
+          "UPDATE ordinances SET version_id = ? WHERE version_id IS NULL",
+          [activeVersionId]
+        );
+        if (orphanResult.affectedRows > 0) {
+          console.log(`  ✅ Linked ${orphanResult.affectedRows} baseline ordinances to active version ID ${activeVersionId}`);
+        }
+
+        // Update version sections count
+        await initConn.query(
+          `UPDATE versions v SET sections = (SELECT COUNT(*) FROM ordinances o WHERE o.version_id = v.id)`
+        );
+      }
+    } catch (integrityErr) {
+      console.warn('  ⚠️ Version integrity migration warning:', integrityErr.message);
     }
 
     await initConn.end();

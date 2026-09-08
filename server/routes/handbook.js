@@ -94,9 +94,12 @@ module.exports = (db) => {
       const {
         versionLabel,
         description,
+        changeNotes,
         releaseDate,
         policies,
         tempFileId,
+        status = 'active',
+        targetVersionId,
       } = req.body;
 
       if (!versionLabel || !versionLabel.trim()) {
@@ -107,7 +110,9 @@ module.exports = (db) => {
         return res.status(400).json({ error: 'No approved policies provided for import.' });
       }
 
-      // Handle PDF file promotion to active handbook
+      const targetStatus = status === 'draft' ? 'draft' : 'active';
+
+      // Handle PDF file promotion
       let activePdfRelativePath = null;
       if (tempFileId) {
         const sanitizedTemp = path.basename(tempFileId);
@@ -118,15 +123,17 @@ module.exports = (db) => {
           fs.copyFileSync(tempPath, activeDest);
           activePdfRelativePath = activePdfName;
 
-          // Also keep the public and src asset updated so Vite and static fallback sync
-          try {
-            const publicPath = path.join(__dirname, '../../public/handbook.pdf');
-            fs.copyFileSync(tempPath, publicPath);
-          } catch (_) {}
-          try {
-            const srcAssetPath = path.join(__dirname, '../../src/assets/handbook.pdf');
-            fs.copyFileSync(tempPath, srcAssetPath);
-          } catch (_) {}
+          // If active, keep the public and src asset updated so Vite and static fallback sync
+          if (targetStatus === 'active') {
+            try {
+              const publicPath = path.join(__dirname, '../../public/handbook.pdf');
+              fs.copyFileSync(tempPath, publicPath);
+            } catch (_) {}
+            try {
+              const srcAssetPath = path.join(__dirname, '../../src/assets/handbook.pdf');
+              fs.copyFileSync(tempPath, srcAssetPath);
+            } catch (_) {}
+          }
 
           // Remove temp file
           try { fs.unlinkSync(tempPath); } catch (_) {}
@@ -136,25 +143,51 @@ module.exports = (db) => {
       // ── BEGIN MySQL Transaction ───────────────────────────────────────────
       await conn.beginTransaction();
 
-      // 1. Archive previous active version(s)
-      await conn.query("UPDATE versions SET status = 'archived' WHERE status = 'active'");
+      let versionId = targetVersionId ? parseInt(targetVersionId, 10) : null;
 
-      // 2. Insert new version record with status 'active'
-      const [vResult] = await conn.query(
-        `INSERT INTO versions (label, description, sections, file_path, status, edited_by, release_date)
-         VALUES (?, ?, ?, ?, 'active', ?, ?)`,
-        [
+      if (versionId) {
+        // Re-importing or updating an existing version
+        if (targetStatus === 'active') {
+          await conn.query("UPDATE versions SET status = 'archived' WHERE status = 'active' AND id != ?", [versionId]);
+        }
+        await conn.query(`
+          UPDATE versions
+          SET label = ?, description = ?, change_notes = COALESCE(?, change_notes),
+              file_path = COALESCE(?, file_path), status = ?, release_date = ?
+          WHERE id = ?
+        `, [
           versionLabel.trim(),
           description || '',
-          policies.length,
+          changeNotes || null,
           activePdfRelativePath,
-          req.user?.name || req.session?.user?.name || 'Admin',
+          targetStatus,
           releaseDate || new Date().toISOString().split('T')[0],
-        ]
-      );
-      const versionId = vResult.insertId;
+          versionId
+        ]);
+      } else {
+        // New version creation
+        if (targetStatus === 'active') {
+          await conn.query("UPDATE versions SET status = 'archived' WHERE status = 'active'");
+        }
 
-      // 3. Upsert policies and scenarios
+        const [vResult] = await conn.query(
+          `INSERT INTO versions (label, description, change_notes, sections, file_path, status, edited_by, release_date)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            versionLabel.trim(),
+            description || '',
+            changeNotes || '',
+            policies.length,
+            activePdfRelativePath,
+            targetStatus,
+            req.user?.name || req.session?.user?.name || 'Admin',
+            releaseDate || new Date().toISOString().split('T')[0],
+          ]
+        );
+        versionId = vResult.insertId;
+      }
+
+      // 3. Upsert policies and scenarios for THIS version
       let insertedCount = 0;
       let updatedCount = 0;
 
@@ -174,8 +207,11 @@ module.exports = (db) => {
         const handbookSectionId = p.handbookSectionId || null;
         const editor = req.user?.name || req.session?.user?.name || 'Admin';
 
-        // Check if policy with this reference code already exists
-        const [existing] = await conn.query('SELECT id FROM ordinances WHERE ref = ?', [ref]);
+        // Check if policy with this reference code already exists in THIS version
+        const [existing] = await conn.query(
+          'SELECT id FROM ordinances WHERE ref = ? AND version_id = ?',
+          [ref, versionId]
+        );
         let ordinanceId;
 
         if (existing.length > 0) {
@@ -183,12 +219,12 @@ module.exports = (db) => {
           await conn.query(`
             UPDATE ordinances
             SET cat_key = ?, cat = ?, title = ?, \`desc\` = ?, summary = ?, full_text = ?,
-                steps = ?, related = ?, handbook_section_id = ?, page = ?, version_id = ?,
+                steps = ?, related = ?, handbook_section_id = ?, page = ?,
                 status = 'published', updated_by = ?
             WHERE id = ?
           `, [
             catKey, cat, title, desc, summary, full,
-            stepsJson, relatedJson, handbookSectionId, pageNum, versionId,
+            stepsJson, relatedJson, handbookSectionId, pageNum,
             editor, ordinanceId
           ]);
           updatedCount++;
