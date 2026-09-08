@@ -670,6 +670,8 @@ async function getPublishedOrdinancesWithScenarios(db) {
       related,
       scenarios,
       handbookSectionId: row.handbook_section_id,
+      page:      row.page || null,
+      versionId: row.version_id || null,
       status:    row.status || 'published',
       updatedBy: row.updated_by || '',
       updatedAt: row.updated_at,

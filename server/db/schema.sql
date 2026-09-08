@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS ordinances (
   steps       JSON NULL,
   related     JSON NULL,
   handbook_section_id VARCHAR(128) NULL,
+  page        INT NULL,
+  version_id  INT NULL,
   status      VARCHAR(32) NOT NULL DEFAULT 'published',
   updated_by  VARCHAR(255) NULL,
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -75,7 +77,8 @@ CREATE TABLE IF NOT EXISTS versions (
   label        VARCHAR(128) NOT NULL,
   description  TEXT NOT NULL,
   sections     INT NOT NULL DEFAULT 0,
-  status       VARCHAR(32) NOT NULL DEFAULT 'inactive',   -- 'active' | 'inactive'
+  file_path    VARCHAR(512) NULL,
+  status       VARCHAR(32) NOT NULL DEFAULT 'inactive',   -- 'active' | 'archived' | 'inactive' | 'processing' | 'review' | 'approved'
   edited_by    VARCHAR(255) NOT NULL,
   release_date DATE NOT NULL,
   created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

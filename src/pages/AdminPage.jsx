@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import OverviewTab   from '../components/admin/OverviewTab';
 import PoliciesTab   from '../components/admin/PoliciesTab';
+import HandbookTab   from '../components/admin/HandbookTab';
 import VersionsTab   from '../components/admin/VersionsTab';
 import AnalyticsTab  from '../components/admin/AnalyticsTab';
 import SuggestionsTab from '../components/admin/SuggestionsTab';
@@ -14,6 +15,7 @@ export default function AdminPage() {
   const tabs = {
     overview:    <OverviewTab setActive={setActive} />,
     policies:    <PoliciesTab />,
+    handbook:    <HandbookTab />,
     versions:    <VersionsTab />,
     analytics:   <AnalyticsTab />,
     suggestions: <SuggestionsTab />,
@@ -22,6 +24,7 @@ export default function AdminPage() {
   const tabLabels = {
     overview: 'Overview',
     policies: 'Manage Policies',
+    handbook: 'Handbook Ingestion',
     versions: 'Version Control',
     analytics: 'Analytics',
     suggestions: 'Suggestions',

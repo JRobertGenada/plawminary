@@ -101,6 +101,30 @@ async function initDb() {
           NOT NULL DEFAULT 0
         `,
       },
+      {
+        table: 'ordinances',
+        column: 'page',
+        sql: `
+          ALTER TABLE ordinances
+          ADD COLUMN page INT NULL
+        `,
+      },
+      {
+        table: 'ordinances',
+        column: 'version_id',
+        sql: `
+          ALTER TABLE ordinances
+          ADD COLUMN version_id INT NULL
+        `,
+      },
+      {
+        table: 'versions',
+        column: 'file_path',
+        sql: `
+          ALTER TABLE versions
+          ADD COLUMN file_path VARCHAR(512) NULL
+        `,
+      },
     ];
 
     for (const migration of migrations) {

@@ -6,9 +6,8 @@ import PdfViewer from '../components/PdfViewer';
 import { Book, Menu, X, Search, ChevronRight, Check } from 'lucide-react';
 import { searchHandbook } from '../utils/searchUtility';
 
-// Place your PDF at: src/assets/handbook.pdf
-// Vite will serve it automatically
-import pdfFile from '../assets/handbook.pdf';
+// Fallback local PDF import
+import pdfFallbackFile from '../assets/handbook.pdf';
 
 export default function HandbookPage() {
   const { state } = useLocation();
@@ -19,6 +18,7 @@ export default function HandbookPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 992);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [activeSectionOverride, setActiveSectionOverride] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState('/api/handbook/active-pdf');
   const hasJumped = useRef(false); // prevent re-firing the state-based jump
 
   const {
@@ -60,16 +60,28 @@ export default function HandbookPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Jump to specific section on mount if provided in state (fires only once)
+  // Jump to specific page or section on mount if provided in state (fires only once)
   useEffect(() => {
-    if (state?.sectionId && totalPages > 0 && !hasJumped.current) {
-      const section = ALL_HANDBOOK_SECTIONS.find(s => s.id === state.sectionId);
-      if (section) {
+    if (totalPages > 0 && !hasJumped.current) {
+      if (state?.page) {
         hasJumped.current = true;
-        jumpTo(section);
+        const pageNum = parseInt(state.page, 10);
+        const section = findSectionByPage(pageNum);
+        if (section) {
+          jumpTo(section);
+        } else {
+          setTargetPage(null);
+          setTimeout(() => setTargetPage(pageNum), 10);
+        }
+      } else if (state?.sectionId) {
+        const section = ALL_HANDBOOK_SECTIONS.find(s => s.id === state.sectionId);
+        if (section) {
+          hasJumped.current = true;
+          jumpTo(section);
+        }
       }
     }
-  }, [state?.sectionId, totalPages]);
+  }, [state, totalPages]);
 
   // Auto-expand chapter if active section changes
   useEffect(() => {
@@ -252,7 +264,7 @@ export default function HandbookPage() {
           marginLeft: !isMobile && !isSidebarOpen ? -300 : 0
         }}>
           <PdfViewer
-            pdfUrl={pdfFile}
+            pdfUrl={pdfUrl}
             targetPage={targetPage}
             onScrollDone={() => setTargetPage(null)}
             onPageChange={handlePageChange}

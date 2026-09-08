@@ -59,6 +59,8 @@ async function startServer() {
   app.use('/api/comments',   require('./routes/comments')(db));
   app.use('/api/progress',   require('./routes/progress')(db));
   app.use('/api/admin',      require('./routes/admin')(db));
+  app.use('/api/admin/handbook', require('./routes/handbook')(db));
+  app.use('/api/handbook',   require('./routes/handbook')(db));
   app.use('/api/page-views', require('./routes/pageviews')(db));
   app.use('/api/ai',         require('./routes/ai')(db));
 

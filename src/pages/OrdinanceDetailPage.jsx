@@ -151,15 +151,17 @@ export default function OrdinanceDetailPage() {
             </div>
           </div>
           <p style={{ fontSize: '1.2rem', color: 'var(--gray-dk)', lineHeight: 1.6, margin: '24px 0', fontWeight: 500 }}>{ord.summary}</p>
-          {ord.handbookSectionId && (
+          {(ord.handbookSectionId || ord.page) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
-              <button onClick={() => navigate('/handbook', { state: { sectionId: ord.handbookSectionId } })} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, background: 'var(--g-pale)', color: 'var(--g-dark)', fontSize: '.85rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', border: '1px solid var(--g-primary)', transition: 'all .2s' }}
+              <button onClick={() => navigate('/handbook', { state: { sectionId: ord.handbookSectionId, page: ord.page } })} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, background: 'var(--g-pale)', color: 'var(--g-dark)', fontSize: '.85rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', border: '1px solid var(--g-primary)', transition: 'all .2s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#d1f4e0' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'var(--g-pale)' }}
               >
-                <ScrollText size={18} /> View Original Policy &rarr;
+                <ScrollText size={18} /> View in Handbook {ord.page ? `(Page ${ord.page})` : ''} &rarr;
               </button>
-              <span style={{ fontSize: '.8rem', color: 'var(--gray-t)', paddingLeft: 4, fontWeight: 500 }}>Opens the relevant page in the Student Handbook</span>
+              <span style={{ fontSize: '.8rem', color: 'var(--gray-t)', paddingLeft: 4, fontWeight: 500 }}>
+                {ord.page ? `Opens Page ${ord.page} in the digital Student Handbook` : 'Opens the relevant page in the Student Handbook'}
+              </span>
             </div>
           )}
         </div>
