@@ -15,7 +15,7 @@ const STEP_LABELS = [
   'Structure',
   'Metadata',
   'Validate',
-  'Review',
+  'Review',//dajshdkjahskdhakjhdadsa
   'Ready'
 ];
 
