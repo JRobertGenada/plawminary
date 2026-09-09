@@ -276,6 +276,13 @@ module.exports = (db) => {
     } catch (err) {
       await conn.rollback();
       console.error('[handbook/import transaction error]', err);
+      // Let the global error handler format PayloadTooLargeError as 413
+      if (err.type === 'entity.too.large' || err.status === 413) {
+        return res.status(413).json({
+          error: 'Import payload too large.',
+          detail: 'The policy data exceeds the server limit. Try reducing the number of policies or check the handbook size.',
+        });
+      }
       next(err);
     } finally {
       conn.release();

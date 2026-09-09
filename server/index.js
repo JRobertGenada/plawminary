@@ -38,7 +38,15 @@ async function startServer() {
     credentials: true,
   }));
 
-  app.use(express.json());
+  // Handbook import can carry 170+ enriched policy objects; raise the limit for
+  // that specific route only — the global limit stays at 100 KB everywhere else.
+  app.use(
+    '/api/admin/handbook/import',
+    express.json({ limit: '25mb' }),
+    express.urlencoded({ extended: true, limit: '25mb' })
+  );
+
+  app.use(express.json());            // 100 KB global default
   app.use(express.urlencoded({ extended: true }));
 
   // Session
@@ -100,6 +108,13 @@ async function startServer() {
 
   // ─── Error handler ─────────────────────────────────────────────────────────
   app.use((err, req, res, next) => {
+    // Payload too large (express body-parser limit exceeded)
+    if (err.type === 'entity.too.large' || err.status === 413) {
+      return res.status(413).json({
+        error: 'Request payload too large.',
+        detail: `The uploaded data exceeds the allowed limit for this endpoint. Please reduce the request size and try again.`,
+      });
+    }
     console.error('[Error]', err);
     res.status(500).json({ error: 'Internal server error', detail: err.message });
   });

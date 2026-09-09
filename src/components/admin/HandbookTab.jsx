@@ -270,7 +270,11 @@ export default function HandbookTab() {
       showToast(`Handbook "${versionForm.label}" successfully activated!`);
     } catch (err) {
       console.error('[Approve & Import Error]', err);
-      showToast(err.message || 'Import failed.', true);
+      // Surface a clear message for payload-too-large (413) errors
+      const msg = err.status === 413
+        ? `Import payload too large (${policies.length} policies). Please restart the server to apply the updated 25 MB limit, then try again.`
+        : err.message || 'Import failed.';
+      showToast(msg, true);
     } finally {
       setImporting(false);
     }
