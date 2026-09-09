@@ -3,9 +3,10 @@ import { api } from '../../hooks/useApi';
 import {
   Upload, FileText, CheckCircle2, AlertCircle, AlertTriangle,
   RefreshCw, Trash2, Edit3, Plus, ArrowRight, Eye, ShieldCheck,
-  Search, Check, X, FileUp, Sparkles, BookOpen, Layers
+  Search, Check, X, FileUp, Sparkles, BookOpen, Layers, Database
 } from 'lucide-react';
 import { BADGE_MAP } from '../../data/ordinances';
+import ConfirmationModal from '../ConfirmationModal';
 
 const STEP_LABELS = [
   'Upload',
@@ -40,6 +41,9 @@ export default function HandbookTab() {
   const [searchQ, setSearchQ] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
+  // Bulk selection state
+  const [selectedPolicyIds, setSelectedPolicyIds] = useState([]);
+
   // Modal edit state
   const [editItem, setEditItem] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -54,11 +58,37 @@ export default function HandbookTab() {
   // Import action state
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
-  const [toast, setToast] = useState(null);
 
-  function showToast(msg, isError = false) {
-    setToast({ msg, isError });
-    setTimeout(() => setToast(null), 4000);
+  // Reusable Center-Screen Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState(null);
+
+  function closeConfirmModal() {
+    if (confirmModal?.loading) return; // prevent closing while action in flight
+    setConfirmModal(null);
+  }
+
+  function showResultModal(title, message, isError = false, policyCount = null, confirmText = 'Dismiss', onDismiss = null) {
+    setConfirmModal({
+      isOpen: true,
+      type: isError ? 'error' : 'success',
+      title,
+      message,
+      policyCount,
+      isResult: true,
+      confirmText,
+      onConfirm: () => {
+        setConfirmModal(null);
+        onDismiss?.();
+      },
+      onCancel: () => {
+        setConfirmModal(null);
+        onDismiss?.();
+      },
+    });
+  }
+
+  function showErrorModal(title, message) {
+    showResultModal(title, message, true);
   }
 
   // ── Drag & Drop / File Select Handlers ─────────────────────────────────────
@@ -95,11 +125,30 @@ export default function HandbookTab() {
     setFileError(null);
     setStatus('empty');
     setActiveStepIndex(0);
+    setSelectedPolicyIds([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  // ── Process Handbook Action ────────────────────────────────────────────────
-  async function handleStartProcessing() {
+  // ── 1. PDF Upload / Ingestion Confirmation ─────────────────────────────────
+  function handleRequestStartProcessing() {
+    if (!selectedFile) return;
+
+    setConfirmModal({
+      isOpen: true,
+      type: 'upload',
+      title: 'Confirm PDF Handbook Ingestion',
+      message: `Start the automated extraction and AI processing pipeline for "${selectedFile.name}" (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)? The server will segment policy provisions, parse articles, and generate AI student scenarios across all pages.`,
+      explicitWarning: 'Extraction runs safely in isolated staging. Existing live handbook versions and database records will remain unchanged until you review and explicitly approve them.',
+      confirmText: 'Begin Ingestion Pipeline',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        await executeStartProcessing();
+      },
+    });
+  }
+
+  async function executeStartProcessing() {
     if (!selectedFile) return;
 
     setStatus('processing');
@@ -107,7 +156,7 @@ export default function HandbookTab() {
     setActiveStepIndex(1); // Extract
     setProcessingStatusText('Reading document bytes & extracting pages…');
 
-    // Simulate visible stepper progress smoothly while upload processes
+    // Stepper progress simulation
     const stepTimer1 = setTimeout(() => {
       setActiveStepIndex(2); // Identify
       setProcessingStatusText('Identifying policy boundaries, articles, and rules…');
@@ -152,7 +201,16 @@ export default function HandbookTab() {
       setPolicies(data.policies || []);
       setActiveStepIndex(6); // Review
       setStatus('review');
-      showToast(`Extracted ${data.totalPolicies} policies across ${data.totalPages} pages.`);
+      setSelectedPolicyIds([]);
+
+      // Center-screen success confirmation modal
+      showResultModal(
+        'Handbook Extracted Successfully',
+        `Successfully extracted ${data.totalPolicies} policy provisions across ${data.totalPages} pages from "${selectedFile.name}". Review each item, make necessary adjustments, or approve provisions for database import.`,
+        false,
+        data.totalPolicies,
+        'Proceed to Review'
+      );
 
     } catch (err) {
       clearTimeout(stepTimer1);
@@ -161,10 +219,11 @@ export default function HandbookTab() {
       console.error('[Handbook Processing Error]', err);
       setFileError(err.message || 'Failed to process the PDF handbook.');
       setStatus('error');
+      showErrorModal('Ingestion Processing Failed', err.message || 'Failed to process the uploaded PDF handbook document.');
     }
   }
 
-  // ── Review Table Actions (Edit / Delete / Add) ─────────────────────────────
+  // ── 2. Save / Edit Policy Confirmation ────────────────────────────────────
   function handleOpenEdit(item) {
     setEditItem({ ...item });
     setIsAddingNew(false);
@@ -186,47 +245,279 @@ export default function HandbookTab() {
       relatedTerms: [],
       handbookSectionId: `sec-manual-${policies.length + 1}`,
       page: 1,
-      status: 'ready',
+      status: 'approved',
       warnings: [],
     });
     setIsAddingNew(true);
   }
 
-  function handleSaveEdit() {
+  function handleRequestSaveEdit() {
     if (!editItem.ref.trim() || !editItem.title.trim()) {
-      showToast('Reference Code and Title are required.', true);
+      showErrorModal('Validation Error', 'Reference Code and Policy Title are required before saving.');
       return;
     }
 
-    const catNameMap = {
-      academic: 'Academic Policies',
-      conduct: 'Student Conduct',
-      discipline: 'Campus Discipline',
-      rights: 'Rights & Responsibilities',
-      general: 'University Policies',
-    };
-    const updated = {
-      ...editItem,
-      cat: catNameMap[editItem.catKey] || 'University Policies',
-      status: 'ready',
-      warnings: [],
-    };
+    setConfirmModal({
+      isOpen: true,
+      type: 'confirm',
+      title: isAddingNew ? 'Add Policy Provision?' : 'Confirm Policy Updates?',
+      policyCount: 1,
+      policyPreview: [{ ref: editItem.ref, title: editItem.title }],
+      message: `Are you sure you want to save changes to policy "${editItem.title}" (${editItem.ref})? This will update the policy details in the current review draft.`,
+      confirmText: isAddingNew ? 'Confirm & Add Policy' : 'Confirm & Save Changes',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        const catNameMap = {
+          academic: 'Academic Policies',
+          conduct: 'Student Conduct',
+          discipline: 'Campus Discipline',
+          rights: 'Rights & Responsibilities',
+          general: 'University Policies',
+        };
+        const updated = {
+          ...editItem,
+          cat: catNameMap[editItem.catKey] || 'University Policies',
+          status: 'approved',
+          warnings: [],
+        };
 
-    if (isAddingNew) {
-      setPolicies(prev => [updated, ...prev]);
-      showToast(`Added policy "${updated.title}".`);
-    } else {
-      setPolicies(prev => prev.map(p => p.id === updated.id ? updated : p));
-      showToast(`Updated policy "${updated.title}".`);
-    }
+        if (isAddingNew) {
+          setPolicies(prev => [updated, ...prev]);
+        } else {
+          setPolicies(prev => prev.map(p => p.id === updated.id ? updated : p));
+        }
 
-    setEditItem(null);
-    setIsAddingNew(false);
+        const wasAdding = isAddingNew;
+        setEditItem(null);
+        setIsAddingNew(false);
+        showResultModal(
+          wasAdding ? 'Policy Added Successfully' : 'Policy Updated Successfully',
+          `Policy "${updated.title}" (${updated.ref}) has been successfully saved to the active draft.`,
+          false,
+          1
+        );
+      },
+      onCancel: closeConfirmModal,
+    });
   }
 
-  function handleDeletePolicy(id) {
-    setPolicies(prev => prev.filter(p => p.id !== id));
-    showToast('Policy removed from preview.');
+  // ── 3. Delete Generated Policy (Explicit Confirmation) ─────────────────────
+  function handleRequestDeletePolicy(policy) {
+    setConfirmModal({
+      isOpen: true,
+      type: 'danger',
+      title: 'Delete Generated Policy?',
+      policyCount: 1,
+      policyPreview: [{ ref: policy.ref, title: policy.title }],
+      message: `Are you sure you want to delete "${policy.title}" (${policy.ref}) from the extracted policy set?`,
+      explicitWarning: 'EXPLICIT CONFIRMATION REQUIRED: This provision will be permanently removed from this ingestion session and will NOT be imported into the database.',
+      confirmText: 'Yes, Delete Policy',
+      cancelText: 'Keep Policy',
+      onConfirm: () => {
+        setPolicies(prev => prev.filter(p => p.id !== policy.id));
+        setSelectedPolicyIds(prev => prev.filter(id => id !== policy.id));
+        showResultModal(
+          'Policy Removed',
+          `Policy "${policy.title}" (${policy.ref}) was removed from the preview set.`,
+          false,
+          1
+        );
+      },
+      onCancel: closeConfirmModal,
+    });
+  }
+
+  // ── 4. Approve Individual Policy Confirmation ─────────────────────────────
+  function handleRequestApprovePolicy(policy) {
+    setConfirmModal({
+      isOpen: true,
+      type: 'approve',
+      title: 'Approve Policy Provision',
+      policyCount: 1,
+      policyPreview: [{ ref: policy.ref, title: policy.title }],
+      message: `Approve "${policy.title}" (${policy.ref}) for official publication? Approving confirms that the clauses, categorization, and AI metadata have been audited and verified.`,
+      confirmText: 'Approve Policy',
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        setPolicies(prev => prev.map(p => p.id === policy.id ? { ...p, status: 'approved', warnings: [] } : p));
+        showResultModal(
+          'Policy Approved',
+          `Policy "${policy.title}" (${policy.ref}) has been marked as approved for database import.`,
+          false,
+          1
+        );
+      },
+      onCancel: closeConfirmModal,
+    });
+  }
+
+  // ── 5. Bulk Approve Confirmation ──────────────────────────────────────────
+  function handleRequestBulkApprove() {
+    const targetIds = selectedPolicyIds.length > 0
+      ? selectedPolicyIds
+      : policies.filter(p => p.status !== 'approved').map(p => p.id);
+
+    if (targetIds.length === 0) {
+      showResultModal('No Policies Pending Approval', 'All policies are already approved or no policies were selected.', false, 0);
+      return;
+    }
+
+    const affectedPolicies = policies.filter(p => targetIds.includes(p.id));
+
+    setConfirmModal({
+      isOpen: true,
+      type: 'approve',
+      title: 'Bulk Approve Policies',
+      policyCount: affectedPolicies.length,
+      policyPreview: affectedPolicies.map(p => ({ ref: p.ref, title: p.title })),
+      message: `You are about to mark ${affectedPolicies.length} policies as approved. This confirms their legal text, categorization, and AI-generated metadata have been verified for database activation.`,
+      confirmText: `Approve ${affectedPolicies.length} Policies`,
+      cancelText: 'Cancel',
+      onConfirm: () => {
+        const idSet = new Set(targetIds);
+        setPolicies(prev => prev.map(p => idSet.has(p.id) ? { ...p, status: 'approved', warnings: [] } : p));
+        setSelectedPolicyIds([]);
+        showResultModal(
+          'Policies Bulk Approved',
+          `Successfully approved ${affectedPolicies.length} policies. They are now flagged as ready for database import.`,
+          false,
+          affectedPolicies.length
+        );
+      },
+      onCancel: closeConfirmModal,
+    });
+  }
+
+  // ── 6. Import Policies to Database (Explicit Confirmation) ────────────────
+  function handleRequestImportToDatabase() {
+    if (!versionForm.label.trim()) {
+      showErrorModal('Validation Error', 'Please specify a version label before importing.');
+      return;
+    }
+    if (policies.length === 0) {
+      showErrorModal('Validation Error', 'No policies available to import.');
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      type: 'import',
+      title: 'Confirm Database Import & Version Activation',
+      policyCount: policies.length,
+      policyPreview: policies.map(p => ({ ref: p.ref, title: p.title })),
+      message: `You are about to commit ${policies.length} policies to the MySQL database under version "${versionForm.label}".`,
+      explicitWarning: `PRODUCTION DATABASE TRANSACTION: This action will execute an atomic database transaction to insert ${policies.length} policy records into the ordinances table, archive previously active versions, promote "${versionForm.label}" to ACTIVE, and immediately refresh student searches.`,
+      confirmText: 'Yes, Confirm & Import to Database',
+      cancelText: 'Cancel & Review',
+      loading: false,
+      onConfirm: async () => {
+        await executeImport(policies);
+      },
+      onCancel: closeConfirmModal,
+    });
+  }
+
+  // ── 7. Bulk Import Selected Policies (Explicit Confirmation) ──────────────
+  function handleRequestBulkImportSelected() {
+    if (selectedPolicyIds.length === 0) {
+      showErrorModal('Selection Required', 'Please select at least one policy using the checkboxes to bulk import.');
+      return;
+    }
+    const selectedPolicies = policies.filter(p => selectedPolicyIds.includes(p.id));
+
+    setConfirmModal({
+      isOpen: true,
+      type: 'import',
+      title: 'Bulk Import Selected Policies',
+      policyCount: selectedPolicies.length,
+      policyPreview: selectedPolicies.map(p => ({ ref: p.ref, title: p.title })),
+      message: `You are about to import ${selectedPolicies.length} selected policies into the database under "${versionForm.label}".`,
+      explicitWarning: `EXPLICIT CONFIRMATION: This will execute a database transaction importing ${selectedPolicies.length} selected policy records into MySQL. Live student search indices will reflect these updates immediately.`,
+      confirmText: `Import ${selectedPolicies.length} Policies to Database`,
+      cancelText: 'Cancel',
+      loading: false,
+      onConfirm: async () => {
+        await executeImport(selectedPolicies);
+      },
+      onCancel: closeConfirmModal,
+    });
+  }
+
+  // ── 8. Finalize Ingestion Confirmation ────────────────────────────────────
+  function handleRequestFinalizeIngestion() {
+    if (!versionForm.label.trim()) {
+      showErrorModal('Validation Error', 'Please specify a version label before finalizing.');
+      return;
+    }
+    if (policies.length === 0) {
+      showErrorModal('Validation Error', 'No policies available to finalize.');
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      type: 'import',
+      title: 'Finalize Handbook Ingestion Pipeline',
+      policyCount: policies.length,
+      policyPreview: policies.map(p => ({ ref: p.ref, title: p.title })),
+      message: `Finalizing ingestion will officially publish "${versionForm.label}", archive all prior editions, and make ${policies.length} verified policies active across the student search portal and handbook reader.`,
+      explicitWarning: 'FINALIZATION LOCK: Once committed, student search results and handbook navigation will immediately reference this handbook version.',
+      confirmText: 'Finalize & Publish Ingestion',
+      cancelText: 'Back to Review',
+      loading: false,
+      onConfirm: async () => {
+        await executeImport(policies);
+      },
+      onCancel: closeConfirmModal,
+    });
+  }
+
+  // ── Core Import Executor (with loading state & double-click prevention) ───
+  async function executeImport(policiesToImport) {
+    setImporting(true);
+    // Update modal to loading state to disable confirm button and show spinner
+    setConfirmModal(prev => prev ? { ...prev, loading: true } : null);
+
+    try {
+      const payload = {
+        versionLabel: versionForm.label.trim(),
+        description: versionForm.description.trim(),
+        releaseDate: versionForm.releaseDate,
+        policies: policiesToImport,
+        tempFileId,
+      };
+
+      const res = await api.post('/admin/handbook/import', payload);
+      setImportResult(res);
+      setActiveStepIndex(7); // Ready
+      setStatus('success');
+      setSelectedPolicyIds([]);
+
+      // Center-screen success confirmation modal
+      showResultModal(
+        'Handbook Successfully Activated!',
+        `Handbook "${versionForm.label}" is now live in the database with ${policiesToImport.length} official policies. All student searches and handbook viewers are now updated.`,
+        false,
+        policiesToImport.length,
+        'View Live Handbook'
+      );
+
+    } catch (err) {
+      console.error('[Approve & Import Error]', err);
+      const msg = err.status === 413
+        ? `Import payload too large (${policiesToImport.length} policies). Please restart the server to apply the updated 25 MB limit, then try again.`
+        : err.message || 'Import failed.';
+
+      showResultModal(
+        'Database Import Failed',
+        msg,
+        true,
+        policiesToImport.length,
+        'Dismiss'
+      );
+    } finally {
+      setImporting(false);
+    }
   }
 
   // ── Filtered Policies for Review ──────────────────────────────────────────
@@ -242,60 +533,36 @@ export default function HandbookTab() {
     });
   }, [policies, categoryFilter, searchQ]);
 
-  // ── Final Approve & Import ─────────────────────────────────────────────────
-  async function handleApproveAndImport() {
-    if (!versionForm.label.trim()) {
-      showToast('Please specify a version label.', true);
-      return;
-    }
-    if (policies.length === 0) {
-      showToast('No policies to import.', true);
-      return;
-    }
+  // Bulk selection helpers
+  const allFilteredSelected = filteredPolicies.length > 0 && filteredPolicies.every(p => selectedPolicyIds.includes(p.id));
 
-    setImporting(true);
-    try {
-      const payload = {
-        versionLabel: versionForm.label.trim(),
-        description: versionForm.description.trim(),
-        releaseDate: versionForm.releaseDate,
-        policies,
-        tempFileId,
-      };
-
-      const res = await api.post('/admin/handbook/import', payload);
-      setImportResult(res);
-      setActiveStepIndex(7); // Ready
-      setStatus('success');
-      showToast(`Handbook "${versionForm.label}" successfully activated!`);
-    } catch (err) {
-      console.error('[Approve & Import Error]', err);
-      // Surface a clear message for payload-too-large (413) errors
-      const msg = err.status === 413
-        ? `Import payload too large (${policies.length} policies). Please restart the server to apply the updated 25 MB limit, then try again.`
-        : err.message || 'Import failed.';
-      showToast(msg, true);
-    } finally {
-      setImporting(false);
+  function handleToggleSelectAll() {
+    if (allFilteredSelected) {
+      setSelectedPolicyIds(prev => prev.filter(id => !filteredPolicies.some(p => p.id === id)));
+    } else {
+      const newIds = new Set([...selectedPolicyIds, ...filteredPolicies.map(p => p.id)]);
+      setSelectedPolicyIds(Array.from(newIds));
     }
   }
 
+  function handleToggleSelect(id) {
+    setSelectedPolicyIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  }
+
+  const unapprovedCount = useMemo(() => {
+    return policies.filter(p => p.status !== 'approved' && p.status !== 'ready').length;
+  }, [policies]);
+
   return (
     <div style={{ paddingBottom: 60 }}>
-      {/* Toast Notification */}
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: 24, right: 24,
-          background: toast.isError ? '#991B1B' : 'var(--g-dark)',
-          color: '#fff', padding: '12px 20px', borderRadius: 12,
-          fontSize: '.875rem', fontWeight: 600, zIndex: 9999,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
-          display: 'flex', alignItems: 'center', gap: 10,
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}>
-          {toast.isError ? <AlertCircle size={18} /> : <CheckCircle2 size={18} color="var(--gold)" />}
-          {toast.msg}
-        </div>
+      {/* Center-Screen Reusable Confirmation & Result Modal */}
+      {confirmModal && (
+        <ConfirmationModal
+          {...confirmModal}
+          onCancel={confirmModal.onCancel || closeConfirmModal}
+        />
       )}
 
       {/* Page Header */}
@@ -450,7 +717,7 @@ export default function HandbookTab() {
                     </button>
                     <button
                       type="button"
-                      onClick={handleStartProcessing}
+                      onClick={handleRequestStartProcessing}
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: 8,
                         padding: '10px 24px', borderRadius: 10,
@@ -521,10 +788,10 @@ export default function HandbookTab() {
                 {policies.length} Policies Extracted across {totalPages} Pages
               </h2>
               <div style={{ fontSize: '.84rem', color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                Review each provision before committing. Database remains unchanged until you approve.
+                Review, audit, or approve each provision. Database remains unchanged until you finalize import.
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button
                 onClick={handleOpenAdd}
                 style={{
@@ -535,6 +802,18 @@ export default function HandbookTab() {
                 }}
               >
                 <Plus size={16} /> Add Custom Policy
+              </button>
+              <button
+                onClick={handleRequestBulkApprove}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '9px 16px', borderRadius: 10, background: '#059669',
+                  border: 'none', color: '#fff',
+                  fontSize: '.85rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                }}
+              >
+                <CheckCircle2 size={16} /> Bulk Approve All ({policies.length})
               </button>
               <button
                 onClick={handleRemoveFile}
@@ -597,6 +876,66 @@ export default function HandbookTab() {
             </div>
           </div>
 
+          {/* ── Contextual Bulk Action Bar ─────────────────────────────────── */}
+          {selectedPolicyIds.length > 0 && (
+            <div style={{
+              background: 'var(--g-dark)', color: '#fff', borderRadius: 14,
+              padding: '12px 20px', display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+              boxShadow: '0 4px 20px rgba(8,47,26,0.25)',
+              border: '1px solid rgba(244,197,66,0.3)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{
+                  padding: '3px 10px', borderRadius: 999, background: 'var(--gold)',
+                  color: 'var(--g-dark)', fontWeight: 800, fontSize: '.78rem'
+                }}>
+                  {selectedPolicyIds.length} Selected
+                </span>
+                <span style={{ fontSize: '.86rem', color: 'rgba(255,255,255,0.85)' }}>
+                  Multi-policy actions ready
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPolicyIds([])}
+                  style={{
+                    background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)',
+                    fontSize: '.8rem', cursor: 'pointer', textDecoration: 'underline'
+                  }}
+                >
+                  Deselect All
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleRequestBulkApprove}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '8px 16px', borderRadius: 9, background: '#059669',
+                    color: '#fff', border: 'none', fontWeight: 800, fontSize: '.84rem',
+                    cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif'
+                  }}
+                >
+                  <CheckCircle2 size={15} /> Bulk Approve ({selectedPolicyIds.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestBulkImportSelected}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '8px 16px', borderRadius: 9, background: 'var(--gold)',
+                    color: 'var(--g-dark)', border: 'none', fontWeight: 800, fontSize: '.84rem',
+                    cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif'
+                  }}
+                >
+                  <Database size={15} /> Bulk Import Selected ({selectedPolicyIds.length})
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Table Preview */}
           <div style={{
             background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 16,
@@ -606,25 +945,53 @@ export default function HandbookTab() {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '.85rem' }}>
                 <thead>
                   <tr style={{ background: 'var(--gray-bg)', borderBottom: '1px solid var(--gray-mid)', color: 'var(--gray-t)' }}>
+                    <th style={{ padding: '12px 14px', width: 40, textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={allFilteredSelected}
+                        onChange={handleToggleSelectAll}
+                        style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--g-primary)' }}
+                        title="Select All Filtered"
+                      />
+                    </th>
                     <th style={{ padding: '12px 16px', fontWeight: 800, width: 120 }}>Code</th>
                     <th style={{ padding: '12px 16px', fontWeight: 800 }}>Policy Title</th>
                     <th style={{ padding: '12px 16px', fontWeight: 800, width: 130 }}>Category</th>
                     <th style={{ padding: '12px 16px', fontWeight: 800, width: 70, textAlign: 'center' }}>Page</th>
                     <th style={{ padding: '12px 16px', fontWeight: 800 }}>Summary & Scenarios</th>
                     <th style={{ padding: '12px 16px', fontWeight: 800, width: 110, textAlign: 'center' }}>Status</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 800, width: 90, textAlign: 'right' }}>Actions</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 800, width: 140, textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPolicies.map((p, idx) => {
                     const badge = BADGE_MAP[p.catKey] || { bg: '#F3F4F6', color: '#374151' };
+                    const isSelected = selectedPolicyIds.includes(p.id);
+                    const isApproved = p.status === 'approved' || p.status === 'ready';
+
                     return (
                       <tr
                         key={p.id || idx}
-                        style={{ borderBottom: '1px solid var(--gray-mid)', transition: 'background .15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(15,79,44,0.02)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                          borderBottom: '1px solid var(--gray-mid)',
+                          background: isSelected ? 'rgba(15,79,44,0.04)' : 'transparent',
+                          transition: 'background .15s'
+                        }}
+                        onMouseEnter={e => {
+                          if (!isSelected) e.currentTarget.style.background = 'rgba(15,79,44,0.02)';
+                        }}
+                        onMouseLeave={e => {
+                          if (!isSelected) e.currentTarget.style.background = 'transparent';
+                        }}
                       >
+                        <td style={{ padding: '14px 14px', textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelect(p.id)}
+                            style={{ cursor: 'pointer', width: 16, height: 16, accentColor: 'var(--g-primary)' }}
+                          />
+                        </td>
                         <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--g-dark)', whiteSpace: 'nowrap' }}>
                           {p.ref}
                         </td>
@@ -664,18 +1031,18 @@ export default function HandbookTab() {
                           )}
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          {p.status === 'ready' ? (
+                          {isApproved ? (
                             <span style={{
                               display: 'inline-flex', alignItems: 'center', gap: 4,
-                              padding: '2px 8px', borderRadius: 999, fontSize: '.7rem',
+                              padding: '3px 10px', borderRadius: 999, fontSize: '.72rem',
                               fontWeight: 700, background: '#D1FAE5', color: '#065F46'
                             }}>
-                              <CheckCircle2 size={12} /> Ready
+                              <CheckCircle2 size={12} /> Approved
                             </span>
                           ) : (
                             <span style={{
                               display: 'inline-flex', alignItems: 'center', gap: 4,
-                              padding: '2px 8px', borderRadius: 999, fontSize: '.7rem',
+                              padding: '3px 10px', borderRadius: 999, fontSize: '.72rem',
                               fontWeight: 700, background: '#FEF3C7', color: '#92400E'
                             }}>
                               <AlertTriangle size={12} /> Review
@@ -683,25 +1050,46 @@ export default function HandbookTab() {
                           )}
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                            {/* Approve Action */}
                             <button
+                              type="button"
+                              onClick={() => handleRequestApprovePolicy(p)}
+                              title={isApproved ? 'Re-confirm Approval' : 'Approve Policy'}
+                              style={{
+                                background: isApproved ? 'rgba(5, 150, 105, 0.1)' : 'none',
+                                border: `1px solid ${isApproved ? '#059669' : 'var(--gray-mid)'}`,
+                                borderRadius: 8, padding: '6px',
+                                color: isApproved ? '#059669' : 'var(--gray-dk)',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}
+                            >
+                              <ShieldCheck size={14} />
+                            </button>
+
+                            {/* Edit Action */}
+                            <button
+                              type="button"
                               onClick={() => handleOpenEdit(p)}
-                              title="Edit Record"
+                              title="Edit Policy"
                               style={{
                                 background: 'none', border: '1px solid var(--gray-mid)',
                                 borderRadius: 8, padding: '6px', color: 'var(--gray-dk)',
-                                cursor: 'pointer'
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
                               }}
                             >
                               <Edit3 size={14} />
                             </button>
+
+                            {/* Delete Action (Explicit Confirmation Required) */}
                             <button
-                              onClick={() => handleDeletePolicy(p.id)}
-                              title="Remove Policy"
+                              type="button"
+                              onClick={() => handleRequestDeletePolicy(p)}
+                              title="Delete Generated Policy"
                               style={{
                                 background: 'none', border: '1px solid var(--gray-mid)',
                                 borderRadius: 8, padding: '6px', color: '#DC2626',
-                                cursor: 'pointer'
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
                               }}
                             >
                               <Trash2 size={14} />
@@ -786,10 +1174,10 @@ export default function HandbookTab() {
               padding: '12px 16px', fontSize: '.82rem', color: '#92400E', lineHeight: 1.5,
               marginBottom: 20
             }}>
-              <strong>Version Safety Guarantee:</strong> Committing will execute a transaction to insert <strong>{policies.length} policies</strong> into MySQL, archive the previous active handbook, promote this version to <code>ACTIVE</code>, and immediately refresh student searches.
+              <strong>Version Safety Guarantee:</strong> Committing will execute an atomic database transaction to insert <strong>{policies.length} policies</strong> into MySQL, archive the previous active handbook, promote this version to <code>ACTIVE</code>, and immediately refresh student searches.
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={handleRemoveFile}
@@ -806,7 +1194,23 @@ export default function HandbookTab() {
 
               <button
                 type="button"
-                onClick={handleApproveAndImport}
+                onClick={handleRequestFinalizeIngestion}
+                disabled={importing}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '11px 22px', borderRadius: 10,
+                  border: '1.5px solid var(--g-primary)', background: 'var(--g-pale)',
+                  color: 'var(--g-primary)', fontWeight: 800, fontSize: '.9rem',
+                  cursor: importing ? 'not-allowed' : 'pointer',
+                  fontFamily: '"Plus Jakarta Sans",sans-serif',
+                }}
+              >
+                <Sparkles size={16} /> Finalize Ingestion
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRequestImportToDatabase}
                 disabled={importing}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -826,7 +1230,7 @@ export default function HandbookTab() {
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 size={16} color="var(--gold)" />
+                    <Database size={16} color="var(--gold)" />
                     Approve & Import ({policies.length} Policies)
                   </>
                 )}
@@ -889,6 +1293,7 @@ export default function HandbookTab() {
                 setStatus('empty');
                 setSelectedFile(null);
                 setPolicies([]);
+                setSelectedPolicyIds([]);
                 setActiveStepIndex(0);
               }}
               style={{
@@ -1017,7 +1422,7 @@ export default function HandbookTab() {
               </button>
               <button
                 type="button"
-                onClick={handleSaveEdit}
+                onClick={handleRequestSaveEdit}
                 style={{ padding: '8px 22px', borderRadius: 8, border: 'none', background: 'var(--g-primary)', color: '#fff', cursor: 'pointer', fontWeight: 700 }}
               >
                 Save Record
