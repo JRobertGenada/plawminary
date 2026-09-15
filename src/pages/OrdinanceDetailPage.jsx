@@ -18,8 +18,8 @@ function Badge({ catK, cat }) {
 // States: 'idle' | 'loading' | 'done' | 'error'
 
 function AiExplanationPanel({ ord }) {
-  const [state, setState]       = useState('idle');
-  const [result, setResult]     = useState(null);
+  const [state, setState] = useState('idle');
+  const [result, setResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   const fetchExplanation = useCallback(async () => {
@@ -39,8 +39,8 @@ function AiExplanationPanel({ ord }) {
 
     try {
       const data = await api.post('/ai/explain', {
-        query:         `Explain this policy to a student: ${ord.title}`,
-        policyTitle:   ord.title,
+        query: `Explain this policy to a student: ${ord.title}`,
+        policyTitle: ord.title,
         policyContent,
       });
       if (!data?.success) throw new Error('Unexpected response from server');
@@ -241,8 +241,8 @@ export default function OrdinanceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied]   = useState(false);
-  const [ord, setOrd]         = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [ord, setOrd] = useState(null);
   const [related, setRelated] = useState([]);
   const [notFound, setNotFound] = useState(false);
 
@@ -258,7 +258,7 @@ export default function OrdinanceDetailPage() {
         setOrd(data);
 
         // Fire page-view event (fire-and-forget)
-        api.post('/page-views', { targetType: 'ordinance', targetId: String(id) }).catch(() => {});
+        api.post('/page-views', { targetType: 'ordinance', targetId: String(id) }).catch(() => { });
 
         // Fetch related ordinances
         if (data.related?.length) {
@@ -399,21 +399,6 @@ export default function OrdinanceDetailPage() {
           {/* Main content */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* Action Procedures */}
-            <div className="p-5 sm:p-8" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <div style={{ color: 'var(--g-primary)' }}><ClipboardList size={22} /></div>
-                <h2 style={{ fontFamily: '"DM Serif Display",serif', fontSize: '1.2rem', color: 'var(--g-dark)', margin: 0 }}>Action Procedures</h2>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {ord.steps.map((step, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--g-pale)', color: 'var(--g-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.85rem', fontWeight: 800, flexShrink: 0, marginTop: 2 }}>{i + 1}</div>
-                    <p style={{ fontSize: '.92rem', color: '#475569', lineHeight: 1.6, margin: 0 }}>{step}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Comments / Discussion */}
             <div className="p-5 sm:p-8" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>

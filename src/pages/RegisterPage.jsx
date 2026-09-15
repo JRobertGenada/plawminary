@@ -6,19 +6,14 @@ import { DEPARTMENTS } from '../data/departments';
 import logo from '../assets/logo.png';
 
 // ── Client-side validators ────────────────────────────────────────────────────
-const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function validate({ studentId, fullName, dept, email, password, confirmPassword }) {
-  if (!studentId.trim())    return { field: 'studentId',      msg: 'Student ID is required.' };
-  if (!fullName.trim())     return { field: 'fullName',       msg: 'Full name is required.' };
-  if (!dept || !dept.trim()) return { field: 'dept',           msg: 'Please select your college / department.' };
-  if (!email.trim())        return { field: 'email',          msg: 'Email is required.' };
-  if (!EMAIL_RX.test(email.trim()))
-                            return { field: 'email',          msg: 'Please enter a valid email address.' };
-  if (!password)            return { field: 'password',       msg: 'Password is required.' };
-  if (password.length < 8)  return { field: 'password',       msg: 'Password must be at least 8 characters.' };
+function validate({ studentId, fullName, dept, password, confirmPassword }) {
+  if (!studentId.trim()) return { field: 'studentId', msg: 'Student ID is required.' };
+  if (!fullName.trim()) return { field: 'fullName', msg: 'Full name is required.' };
+  if (!dept || !dept.trim()) return { field: 'dept', msg: 'Please select your college / department.' };
+  if (!password) return { field: 'password', msg: 'Password is required.' };
+  if (password.length < 8) return { field: 'password', msg: 'Password must be at least 8 characters.' };
   if (password !== confirmPassword)
-                            return { field: 'confirmPassword', msg: 'Passwords do not match.' };
+    return { field: 'confirmPassword', msg: 'Passwords do not match.' };
   return null;
 }
 
@@ -55,13 +50,13 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    studentId: '', fullName: '', dept: '', email: '', password: '', confirmPassword: '',
+    studentId: '', fullName: '', dept: '', password: '', confirmPassword: '',
   });
   const [fieldError, setFieldError] = useState({});   // per-field error highlight
-  const [error, setError]   = useState('');           // general error banner
+  const [error, setError] = useState('');           // general error banner
   const [success, setSuccess] = useState('');         // success banner
   const [loading, setLoading] = useState(false);
-  const [showPw, setShowPw]   = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
 
   function set(key, val) {
@@ -87,11 +82,10 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const data = await api.post('/auth/register', {
-        studentId:       form.studentId.trim(),
-        fullName:        form.fullName.trim(),
-        dept:            form.dept.trim(),
-        email:           form.email.trim().toLowerCase(),
-        password:        form.password,
+        studentId: form.studentId.trim(),
+        fullName: form.fullName.trim(),
+        dept: form.dept.trim(),
+        password: form.password,
         confirmPassword: form.confirmPassword,
       });
 
@@ -108,8 +102,6 @@ export default function RegisterPage() {
       // Map server errors back to per-field highlights
       if (msg.toLowerCase().includes('student id')) {
         setFieldError({ studentId: true });
-      } else if (msg.toLowerCase().includes('email')) {
-        setFieldError({ email: true });
       } else if (msg.toLowerCase().includes('college') || msg.toLowerCase().includes('department')) {
         setFieldError({ dept: true });
       }
@@ -219,22 +211,6 @@ export default function RegisterPage() {
                   <ChevronDown size={18} />
                 </div>
               </div>
-            </div>
-
-            {/* Email */}
-            <div style={{ marginBottom: 16 }}>
-              <label htmlFor="reg-email" style={labelStyle()}>Email</label>
-              <input
-                id="reg-email"
-                type="email"
-                value={form.email}
-                onChange={e => set('email', e.target.value)}
-                placeholder="student@plsp.edu.ph"
-                autoComplete="email"
-                style={inputStyle(fieldError.email)}
-                onFocus={e => Object.assign(e.target.style, focusStyle)}
-                onBlur={e => { e.target.style.borderColor = fieldError.email ? '#FCA5A5' : 'var(--gray-mid)'; }}
-              />
             </div>
 
             {/* Password */}

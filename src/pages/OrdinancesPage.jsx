@@ -20,14 +20,15 @@ const CATS = [
 
 function SkeletonCard() {
   return (
-    <div style={{ background: '#fff', borderRadius: 20, border: '1px solid var(--gray-mid)', padding: '24px', display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', overflow: 'hidden' }}>
-      <div style={{ width: 80, height: 20, background: 'var(--gray-bg)', borderRadius: 10, animation: 'pulse 1.5s infinite' }} />
-      <div style={{ width: '80%', height: 24, background: 'var(--gray-bg)', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
-      <div style={{ width: '100%', height: 60, background: 'var(--gray-bg)', borderRadius: 8, animation: 'pulse 1.5s infinite' }} />
-      <div style={{ height: 40, background: 'var(--gray-bg)', borderRadius: 12, animation: 'pulse 1.5s infinite' }} />
+    <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-mid)', padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', overflow: 'hidden', height: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ width: 100, height: 16, background: 'var(--gray-bg)', borderRadius: 4, animation: 'pulse 1.5s infinite' }} />
-        <div style={{ width: 80, height: 32, background: 'var(--gray-bg)', borderRadius: 8, animation: 'pulse 1.5s infinite' }} />
+        <div style={{ width: 80, height: 20, background: 'var(--gray-bg)', borderRadius: 10, animation: 'pulse 1.5s infinite' }} />
+        <div style={{ width: 65, height: 18, background: 'var(--gray-bg)', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
+      </div>
+      <div style={{ width: '85%', height: 22, background: 'var(--gray-bg)', borderRadius: 6, animation: 'pulse 1.5s infinite', marginTop: 4 }} />
+      <div style={{ width: '100%', height: 48, background: 'var(--gray-bg)', borderRadius: 6, animation: 'pulse 1.5s infinite' }} />
+      <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid #F3F4F6' }}>
+        <div style={{ width: '100%', height: 34, background: 'var(--gray-bg)', borderRadius: 10, animation: 'pulse 1.5s infinite' }} />
       </div>
     </div>
   );
@@ -142,7 +143,7 @@ export default function OrdinancesPage() {
         {/* Hero Search Section */}
         <section className="px-4 py-10 sm:py-14" style={{ background: 'linear-gradient(135deg,var(--g-dark) 0%,var(--g-primary) 60%,var(--g-light) 100%)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 50%,rgba(244,197,66,.08) 0%,transparent 60%)' }} />
-          <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ maxWidth: 1240, margin: '0 auto', position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.8rem', color: 'rgba(255,255,255,.6)', marginBottom: 14 }}>
               <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => navigate('/')}>
                 <ArrowLeft size={14} /> Home
@@ -205,7 +206,7 @@ export default function OrdinancesPage() {
 
         {/* Content Section */}
         <section className="px-4 py-8 sm:py-12">
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             
             {/* Mobile Filter Toggle & Quick Horizontal Pills Bar */}
             <div className="lg:hidden mb-6">
@@ -273,7 +274,7 @@ export default function OrdinancesPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6 lg:gap-8 items-start">
 
               {/* Desktop Sidebar Filters */}
               <aside className="hidden lg:block" style={{ 
@@ -406,41 +407,95 @@ export default function OrdinancesPage() {
                 </div>
 
                 {loading ? (
-                  <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'} gap-5`}>
+                  <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-4 sm:gap-5`}>
                     {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
                   </div>
                 ) : results.length > 0 ? (
                   <>
                     {/* Grid Mode */}
                     {viewMode === 'grid' ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
                         {paginatedResults.map((o, i) => (
-                          <div key={o.id} className="fade-up" style={{ background: '#fff', borderRadius: 20, border: '1px solid var(--gray-mid)', padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', overflow: 'hidden', animationDelay: `${i * 0.03}s`, transition: 'all .25s ease' }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--g-primary)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,.06)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--gray-mid)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
+                          <div
+                            key={o.id}
+                            role="article"
+                            tabIndex={0}
+                            aria-label={o.title}
+                            className="fade-up"
+                            onClick={() => handleOrdinanceClick(o.id)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleOrdinanceClick(o.id);
+                              }
+                            }}
+                            style={{
+                              background: '#fff',
+                              borderRadius: 16,
+                              border: '1px solid var(--gray-mid)',
+                              padding: '20px 18px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 10,
+                              position: 'relative',
+                              overflow: 'hidden',
+                              animationDelay: `${i * 0.03}s`,
+                              transition: 'all .22s cubic-bezier(0.4, 0, 0.2, 1)',
+                              cursor: 'pointer',
+                              height: '100%',
+                              boxSizing: 'border-box',
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.borderColor = 'var(--g-primary)';
+                              e.currentTarget.style.boxShadow = '0 10px 28px rgba(31,111,61,.1)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.borderColor = 'var(--gray-mid)';
+                              e.currentTarget.style.boxShadow = 'none';
+                              e.currentTarget.style.transform = 'none';
+                            }}
                           >
-                            <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'linear-gradient(to bottom,var(--g-primary),var(--g-light))', opacity: 0.8 }} />
-                            <div className="flex items-center justify-between gap-2">
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: 3.5, height: '100%', background: 'linear-gradient(to bottom,var(--g-primary),var(--g-light))', opacity: 0.9 }} />
+
+                            {/* Top row: Category badge + Policy code */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                               <Badge catK={o.catK} cat={o.cat} />
-                              <span style={{ fontSize: '.72rem', color: 'var(--gray-t)', fontWeight: 600 }}>{o.ref}</span>
+                              <span style={{ fontSize: '.72rem', color: 'var(--gray-t)', fontWeight: 700, background: 'var(--gray-bg)', border: '1px solid var(--gray-mid)', padding: '2px 8px', borderRadius: 6, letterSpacing: '.02em', whiteSpace: 'nowrap' }}>
+                                {o.ref}
+                              </span>
                             </div>
-                            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--g-dark)', lineHeight: 1.35 }}>{o.title}</h3>
-                            <p style={{ fontSize: '.85rem', color: 'var(--gray-t)', lineHeight: 1.55, flex: 1 }}>{o.desc}</p>
-                            
-                            <div style={{ background: 'var(--gray-bg)', borderRadius: 12, padding: '10px 12px' }}>
-                              <p style={{ fontSize: '.78rem', color: 'var(--gray-dk)', lineHeight: 1.45, margin: 0 }}>
-                                <span style={{ fontWeight: 800, color: 'var(--g-primary)', fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.05em', marginRight: 6 }}>Summary</span>
-                                {o.summary}
-                              </p>
-                            </div>
+
+                            {/* Official Title */}
+                            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--g-dark)', lineHeight: 1.35, margin: '2px 0 0 0', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                              {o.title}
+                            </h3>
+
+                            {/* Concise Description */}
+                            <p
+                              style={{
+                                fontSize: '.84rem',
+                                color: 'var(--gray-t)',
+                                lineHeight: 1.5,
+                                margin: 0,
+                                flex: 1,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                              }}
+                              title={o.desc}
+                            >
+                              {o.desc}
+                            </p>
 
                             {/* Relevance chip — shown only in scenario search mode */}
                             {scenarioMode && o.relevanceLabel && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
                                 <div style={{
                                   display: 'inline-flex', alignItems: 'center', gap: 4,
-                                  padding: '3px 10px', borderRadius: 999,
-                                  fontSize: '.7rem', fontWeight: 700,
+                                  padding: '3px 9px', borderRadius: 999,
+                                  fontSize: '.68rem', fontWeight: 700,
                                   background: o.relevanceLabel === 'High' ? '#D1FAE5' : o.relevanceLabel === 'Medium' ? '#FEF3C7' : '#F3F4F6',
                                   color: o.relevanceLabel === 'High' ? '#065F46' : o.relevanceLabel === 'Medium' ? '#92400E' : '#6B7280',
                                 }}>
@@ -450,12 +505,47 @@ export default function OrdinancesPage() {
                               </div>
                             )}
 
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4 }}>
-                              <button onClick={() => handleOrdinanceClick(o.id)}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, fontWeight: 800, fontSize: '.82rem', border: 'none', background: 'var(--g-dark)', color: '#fff', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', transition: 'all .2s ease' }}
-                                onMouseEnter={e => { e.currentTarget.style.background = 'var(--g-primary)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'var(--g-dark)'; }}>
-                                Details <ChevronRight size={14} />
+                            {/* Bottom-aligned View Details Button */}
+                            <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid #F3F4F6' }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOrdinanceClick(o.id);
+                                }}
+                                aria-label={`View Details for ${o.title}`}
+                                style={{
+                                  width: '100%',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 6,
+                                  padding: '8px 14px',
+                                  borderRadius: 10,
+                                  fontWeight: 700,
+                                  fontSize: '.82rem',
+                                  border: '1px solid rgba(31,111,61,0.22)',
+                                  background: 'var(--g-pale)',
+                                  color: 'var(--g-primary)',
+                                  cursor: 'pointer',
+                                  fontFamily: '"Plus Jakarta Sans",sans-serif',
+                                  transition: 'all .2s ease',
+                                }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.background = 'var(--g-primary)';
+                                  e.currentTarget.style.color = '#fff';
+                                  e.currentTarget.style.borderColor = 'var(--g-primary)';
+                                  e.currentTarget.style.boxShadow = '0 3px 10px rgba(31,111,61,.2)';
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.background = 'var(--g-pale)';
+                                  e.currentTarget.style.color = 'var(--g-primary)';
+                                  e.currentTarget.style.borderColor = 'rgba(31,111,61,0.22)';
+                                  e.currentTarget.style.boxShadow = 'none';
+                                }}
+                              >
+                                <span>View Details</span>
+                                <ChevronRight size={14} />
                               </button>
                             </div>
                           </div>
@@ -492,10 +582,11 @@ export default function OrdinancesPage() {
                             </div>
 
                             <button onClick={() => handleOrdinanceClick(o.id)}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 10, fontWeight: 800, fontSize: '.82rem', border: 'none', background: 'var(--g-dark)', color: '#fff', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', whiteSpace: 'nowrap', transition: 'all .2s ease', alignSelf: 'center' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--g-primary)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = 'var(--g-dark)'; }}>
-                              View Policy <ChevronRight size={14} />
+                              aria-label={`View Details for ${o.title}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 10, fontWeight: 700, fontSize: '.82rem', border: '1px solid rgba(31,111,61,0.22)', background: 'var(--g-pale)', color: 'var(--g-primary)', cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', whiteSpace: 'nowrap', transition: 'all .2s ease', alignSelf: 'center' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--g-primary)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--g-primary)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'var(--g-pale)'; e.currentTarget.style.color = 'var(--g-primary)'; e.currentTarget.style.borderColor = 'rgba(31,111,61,0.22)'; }}>
+                              View Details <ChevronRight size={14} />
                             </button>
                           </div>
                         ))}
