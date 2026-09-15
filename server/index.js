@@ -131,7 +131,8 @@ async function startServer() {
     console.log(`   GET  /api/comments?ordinanceId=1`);
     console.log(`   GET  /api/progress  (auth required)`);
     console.log(`   GET  /api/admin/stats (admin only)`);
-    console.log(`   POST /api/ai/search\n`);
+    console.log(`   POST /api/ai/search`);
+    console.log(`   POST /api/ai/explain\n`);
   });
 }
 

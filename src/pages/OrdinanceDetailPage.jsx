@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Lightbulb, ScrollText, ClipboardList, Info, Printer, Link2, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, Book } from 'lucide-react';
+import { Lightbulb, ScrollText, ClipboardList, Info, Printer, Link2, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, Sparkles, AlertCircle, RotateCcw, BookOpen, ArrowRight } from 'lucide-react';
 import { BADGE_MAP } from '../data/ordinances';
 import { api } from '../hooks/useApi';
 import CommentsPanel from '../components/CommentsPanel';
@@ -11,6 +11,229 @@ function Badge({ catK, cat }) {
     <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 14px', borderRadius: 999, fontSize: '.72rem', fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', background: s.bg, color: s.color }}>
       {cat}
     </span>
+  );
+}
+
+// ── AI Explanation panel ────────────────────────────────────────────────────
+// States: 'idle' | 'loading' | 'done' | 'error'
+
+function AiExplanationPanel({ ord }) {
+  const [state, setState]       = useState('idle');
+  const [result, setResult]     = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const fetchExplanation = useCallback(async () => {
+    setState('loading');
+    setResult(null);
+    setErrorMsg('');
+
+    // Build best available official content to ground Gemini
+    const policyContent = [
+      ord.summary,
+      ...(Array.isArray(ord.steps) ? ord.steps : []),
+      ord.fullText || '',
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+      .slice(0, 8000);
+
+    try {
+      const data = await api.post('/ai/explain', {
+        query:         `Explain this policy to a student: ${ord.title}`,
+        policyTitle:   ord.title,
+        policyContent,
+      });
+      if (!data?.success) throw new Error('Unexpected response from server');
+      setResult(data);
+      setState('done');
+    } catch (err) {
+      setErrorMsg(err.message || 'Could not generate explanation. Please try again.');
+      setState('error');
+    }
+  }, [ord]);
+
+  // ── Idle: prompt button ───────────────────────────────────────────────────
+  if (state === 'idle') {
+    return (
+      <div style={{ marginBottom: 32 }}>
+        <button
+          id="ai-explain-btn"
+          onClick={fetchExplanation}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            padding: '12px 22px', borderRadius: 14,
+            background: 'linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%)',
+            color: '#fff', fontSize: '.88rem', fontWeight: 700,
+            fontFamily: '"Plus Jakarta Sans",sans-serif',
+            border: 'none', cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(37,99,235,.35)',
+            transition: 'all .22s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37,99,235,.45)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(37,99,235,.35)'; }}
+        >
+          <Sparkles size={17} />
+          Get AI Explanation
+        </button>
+        <p style={{ marginTop: 10, fontSize: '.78rem', color: 'var(--gray-t)', fontWeight: 500, maxWidth: 480 }}>
+          Optional · AI-generated, based only on the official policy text above. The handbook is authoritative.
+        </p>
+      </div>
+    );
+  }
+
+  // ── Loading: skeleton ─────────────────────────────────────────────────────
+  if (state === 'loading') {
+    return (
+      <div
+        id="ai-explanation-panel"
+        style={{
+          marginBottom: 32,
+          background: 'linear-gradient(135deg,rgba(30,58,95,.04) 0%,rgba(37,99,235,.06) 100%)',
+          border: '1.5px solid rgba(37,99,235,.18)',
+          borderRadius: 20, padding: '24px 28px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(37,99,235,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sparkles size={18} style={{ color: '#2563eb', animation: 'spin 1.6s linear infinite' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: '.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: '#2563eb' }}>AI Explanation</div>
+            <div style={{ fontSize: '.78rem', color: 'var(--gray-t)', marginTop: 1 }}>Generating student-friendly explanation…</div>
+          </div>
+        </div>
+        {[80, 60, 90].map((w, i) => (
+          <div key={i} style={{ height: 14, borderRadius: 8, background: 'rgba(37,99,235,.1)', marginBottom: 10, width: `${w}%`, animation: 'pulse 1.5s infinite' }} />
+        ))}
+        <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ height: 12, borderRadius: 8, background: 'rgba(37,99,235,.07)', width: `${50 + i * 12}%`, animation: 'pulse 1.5s infinite' }} />
+          ))}
+        </div>
+        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  // ── Error ─────────────────────────────────────────────────────────────────
+  if (state === 'error') {
+    return (
+      <div
+        id="ai-explanation-panel"
+        style={{
+          marginBottom: 32,
+          background: '#FFF7F7', border: '1.5px solid #FECACA',
+          borderRadius: 20, padding: '22px 26px',
+          display: 'flex', alignItems: 'flex-start', gap: 14,
+        }}
+      >
+        <div style={{ color: '#DC2626', flexShrink: 0, marginTop: 2 }}>
+          <AlertCircle size={22} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '.88rem', fontWeight: 700, color: '#DC2626', marginBottom: 4 }}>Explanation Unavailable</div>
+          <div style={{ fontSize: '.82rem', color: '#7F1D1D', lineHeight: 1.5 }}>{errorMsg}</div>
+          <button
+            onClick={fetchExplanation}
+            style={{
+              marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '8px 16px', borderRadius: 10, background: '#FEE2E2',
+              border: '1px solid #FECACA', color: '#DC2626',
+              fontSize: '.82rem', fontWeight: 700,
+              fontFamily: '"Plus Jakarta Sans",sans-serif', cursor: 'pointer',
+              transition: 'all .2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#FECACA'}
+            onMouseLeave={e => e.currentTarget.style.background = '#FEE2E2'}
+          >
+            <RotateCcw size={14} /> Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Done: grounded explanation ────────────────────────────────────────────
+  const { explanation, keyPoints, recommendedAction, source } = result;
+  return (
+    <div
+      id="ai-explanation-panel"
+      style={{
+        marginBottom: 32,
+        background: 'linear-gradient(135deg,rgba(30,58,95,.03) 0%,rgba(37,99,235,.05) 100%)',
+        border: '1.5px solid rgba(37,99,235,.2)',
+        borderRadius: 20, padding: '26px 30px',
+        boxShadow: '0 6px 24px rgba(37,99,235,.08)',
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(37,99,235,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: '.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: '#2563eb' }}>AI Explanation</div>
+            <div style={{ fontSize: '.75rem', color: 'var(--gray-t)', marginTop: 2 }}>
+              {source === 'fallback' ? 'Based on policy summary' : 'Generated from official policy text'}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => setState('idle')}
+          title="Dismiss"
+          style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(37,99,235,.2)', background: 'transparent', color: '#2563eb', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', transition: 'all .2s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,99,235,.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          Dismiss
+        </button>
+      </div>
+
+      {/* Explanation paragraph */}
+      <p style={{ fontSize: '1rem', color: '#1e3a5f', lineHeight: 1.7, fontWeight: 500, margin: '0 0 20px' }}>
+        {explanation}
+      </p>
+
+      {/* Key points */}
+      {Array.isArray(keyPoints) && keyPoints.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: '#2563eb', marginBottom: 10 }}>
+            Key Points
+          </div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {keyPoints.map((pt, i) => (
+              <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(37,99,235,.1)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.72rem', fontWeight: 800, flexShrink: 0, marginTop: 1 }}>
+                  {i + 1}
+                </div>
+                <span style={{ fontSize: '.88rem', color: '#334155', lineHeight: 1.55 }}>{pt}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Recommended action */}
+      {recommendedAction && (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '14px 16px', borderRadius: 12, background: 'rgba(37,99,235,.07)', border: '1px solid rgba(37,99,235,.14)', marginBottom: 18 }}>
+          <ArrowRight size={16} style={{ color: '#2563eb', flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <div style={{ fontSize: '.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: '#2563eb', marginBottom: 3 }}>Recommended Action</div>
+            <span style={{ fontSize: '.88rem', color: '#1e3a5f', fontWeight: 500, lineHeight: 1.5 }}>{recommendedAction}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Authoritative disclaimer */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 14px', borderRadius: 10, background: 'rgba(0,0,0,.03)', border: '1px solid rgba(0,0,0,.06)' }}>
+        <BookOpen size={14} style={{ color: 'var(--gray-t)', flexShrink: 0, marginTop: 2 }} />
+        <p style={{ fontSize: '.75rem', color: 'var(--gray-t)', lineHeight: 1.5, margin: 0 }}>
+          AI-generated explanation based on the official policy content. The Student Handbook is the authoritative source — consult it or your academic adviser for final decisions.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -165,6 +388,11 @@ export default function OrdinanceDetailPage() {
             </div>
           )}
         </div>
+
+        {/* AI EXPLANATION — optional, only shown when user clicks the button */}
+        {ord.summary && (
+          <AiExplanationPanel key={ord.id} ord={ord} />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 sm:gap-8 items-start">
 

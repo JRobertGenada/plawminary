@@ -95,6 +95,144 @@ async function extractSearchTerms(scenarioQuery, timeoutMs = 5000) {
   }
 }
 
+const POLICY_EXPLANATION_INSTRUCTION = `You are a grounded policy explanation assistant for the Pamantasan ng Lungsod ng San Pablo (PLSP) Student Handbook.
+Your task is to explain what an official policy means to a student in plain, friendly language.
+
+STRICT CONSTRAINTS:
+1. You must ONLY output a single, valid JSON object with NO markdown backticks, NO markdown formatting, and NO extra commentary.
+2. The JSON object must strictly match this structure:
+   {
+     "explanation": "2-4 short sentences explaining what this policy means in plain, student-friendly language.",
+     "keyPoints": ["One concise key point", "Another key point", "...up to 5 total"],
+     "recommendedAction": "One specific, practical sentence telling the student what to do or keep in mind."
+   }
+3. ABSOLUTE ZERO-HALLUCINATION RULE:
+   - Use ONLY the official policy content provided to you.
+   - DO NOT invent, assume, or fabricate any policy rules, penalties, sanctions, procedures, or legal conclusions not explicitly stated in the provided content.
+   - If the provided content does not mention a specific penalty or procedure, do NOT create one.
+4. Keep the explanation SHORT (under 100 words), friendly, and jargon-free.
+5. keyPoints must be an array of 2-5 short bullet-style strings, each under 20 words.
+6. recommendedAction must be a single actionable sentence.`;
+
+/**
+ * Generate a grounded, student-friendly explanation of an official policy excerpt.
+ * Uses only the supplied official policy content — never invents rules.
+ * Falls back to a deterministic local explanation if Gemini fails.
+ *
+ * @param {string} studentQuery   - The student's question or context
+ * @param {string} policyTitle    - Title of the policy section
+ * @param {string} policyContent  - Official policy text (truncated to safe length)
+ * @param {number} timeoutMs      - Timeout in milliseconds (default 8000)
+ * @returns {Promise<{explanation: string, keyPoints: string[], recommendedAction: string, source: string}>}
+ */
+async function explainPolicy(studentQuery, policyTitle, policyContent, timeoutMs = 8000) {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey || apiKey.trim() === '' || apiKey.trim() === 'your_gemini_api_key_here') {
+    return buildFallbackExplanation(policyTitle, policyContent);
+  }
+
+  // Input validation
+  if (!policyTitle || !policyContent || !policyContent.trim()) {
+    return buildFallbackExplanation(policyTitle, policyContent);
+  }
+
+  const modelName = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+  const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
+
+  // Limit content to avoid token quota issues on very large policies
+  const safeContent = (policyContent || '').slice(0, 4000);
+  const safeQuery   = (studentQuery  || '').slice(0, 300);
+
+  const prompt = `A student asked: "${safeQuery}"
+
+OFFICIAL POLICY TITLE: ${policyTitle}
+
+OFFICIAL POLICY CONTENT (use ONLY this — do not invent rules):
+${safeContent}
+
+Using ONLY the above official policy content, explain this policy to the student in plain, friendly language. Output ONLY the JSON schema specified.`;
+
+  let timerId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timerId = setTimeout(() => {
+      const timeoutErr = new Error(`Gemini explain timed out after ${timeoutMs}ms`);
+      timeoutErr.code = 'TIMEOUT';
+      reject(timeoutErr);
+    }, timeoutMs);
+  });
+
+  const apiCallPromise = (async () => {
+    const response = await callGeminiWithRetry(
+      ai,
+      modelName,
+      prompt,
+      2,
+      POLICY_EXPLANATION_INSTRUCTION
+    );
+
+    const rawText = response?.text || '';
+    if (!rawText) throw new Error('Empty response from Gemini explain');
+
+    const cleanedText = rawText
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
+    const parsed = JSON.parse(cleanedText);
+
+    const explanation = typeof parsed.explanation === 'string' && parsed.explanation.trim()
+      ? parsed.explanation.trim()
+      : generateSummary(policyContent);
+
+    const keyPoints = Array.isArray(parsed.keyPoints)
+      ? parsed.keyPoints.map(k => String(k).trim()).filter(Boolean).slice(0, 5)
+      : extractKeyPoints(policyContent);
+
+    const recommendedAction = typeof parsed.recommendedAction === 'string' && parsed.recommendedAction.trim()
+      ? parsed.recommendedAction.trim()
+      : 'Refer to the full policy or speak with your academic adviser for guidance.';
+
+    return { explanation, keyPoints, recommendedAction, source: 'gemini' };
+  })();
+
+  try {
+    const result = await Promise.race([apiCallPromise, timeoutPromise]);
+    return result;
+  } catch (err) {
+    console.warn(`[Gemini explain fallback for "${policyTitle}"]: ${err.message}`);
+    return buildFallbackExplanation(policyTitle, policyContent);
+  } finally {
+    clearTimeout(timerId);
+  }
+}
+
+/**
+ * Deterministic fallback — never fails, never invents policy content.
+ */
+function buildFallbackExplanation(policyTitle, policyContent) {
+  const explanation = generateSummary(policyContent) ||
+    `This section covers the official policy on "${policyTitle || 'this topic'}" as established in the PLSP Student Handbook.`;
+  const keyPoints = extractKeyPoints(policyContent);
+  const recommendedAction = 'Read the full policy text above carefully and consult your academic adviser if you have questions.';
+  return { explanation, keyPoints, recommendedAction, source: 'fallback' };
+}
+
+/**
+ * Extract up to 4 key sentences from policy text as concise bullet points.
+ */
+function extractKeyPoints(text = '') {
+  if (!text) return [];
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  const sentences = cleaned.match(/[^.!?]+[.!?]+/g) || [];
+  // Prefer sentences that are meaningful (> 20 chars, < 200 chars)
+  const meaningful = sentences
+    .map(s => s.trim())
+    .filter(s => s.length > 20 && s.length < 200);
+  return meaningful.slice(0, 4);
+}
+
 const POLICY_STRUCTURING_INSTRUCTION = `You are an expert institutional policy structuring assistant for the Pamantasan ng Lungsod ng San Pablo (PLSP) Student Handbook.
 Your job is to analyze the provided excerpt of an official campus policy and generate strictly factual structured metadata.
 
@@ -337,4 +475,5 @@ module.exports = {
   extractSearchTerms,
   structurePolicyMetadata,
   generateFallbackMetadata,
+  explainPolicy,
 };

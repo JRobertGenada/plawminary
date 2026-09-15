@@ -1,13 +1,12 @@
 /**
- * server/routes/ai.js — AI-assisted scenario and policy search
+ * server/routes/ai.js — AI-assisted scenario search + grounded policy explanation
  *
- * Endpoint: POST /api/ai/search
+ * Endpoints:
+ *   POST /api/ai/search   — Query parser (existing, do not modify)
+ *   POST /api/ai/explain  — Grounded policy explanation (Phase 2)
  *
- * Analyzes natural language scenarios with Google Gemini to extract intent and
- * search keywords, then queries the actual MySQL ordinances database via Fuse.js.
- *
- * Fallback: If Gemini fails, times out, or has no configured API key,
- * the search degrades gracefully to standard local scenario search without crashing.
+ * Fallback: Both endpoints degrade gracefully if Gemini fails, times out,
+ * or has no configured API key, without crashing or leaking the API key.
  */
 
 const express = require('express');
@@ -15,11 +14,15 @@ const router = express.Router();
 const geminiService = require('../services/geminiService');
 const searchMatcher = require('../services/searchMatcher');
 
+// Maximum character length accepted for policyContent to prevent abuse
+const MAX_POLICY_CONTENT_LENGTH = 10_000;
+
 module.exports = (db) => {
 
   /**
    * POST /api/ai/search
    * Body: { query: string }
+   * (Existing — do not modify behavior)
    */
   router.post('/search', async (req, res, next) => {
     try {
@@ -59,6 +62,71 @@ module.exports = (db) => {
         ...(fallbackReason ? { fallbackReason } : {}),
         total: results.length,
         results,
+      });
+
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * POST /api/ai/explain
+   *
+   * Phase 2: Grounded AI Policy Explanation.
+   * Explains an official policy to a student using ONLY the supplied content.
+   * Gemini is strictly constrained — it cannot invent or assume any rules.
+   *
+   * Body: {
+   *   query:         string  — The student's question or context (optional)
+   *   policyTitle:   string  — Title of the policy section
+   *   policyContent: string  — Official policy text to ground the explanation
+   * }
+   *
+   * Returns: {
+   *   success:           true
+   *   explanation:       string
+   *   keyPoints:         string[]
+   *   recommendedAction: string
+   *   source:            "gemini" | "fallback"
+   * }
+   */
+  router.post('/explain', async (req, res, next) => {
+    try {
+      const { query, policyTitle, policyContent } = req.body;
+
+      // ── Validation ────────────────────────────────────────────────────
+      if (!policyTitle || typeof policyTitle !== 'string' || !policyTitle.trim()) {
+        return res.status(400).json({ error: 'policyTitle is required' });
+      }
+
+      if (!policyContent || typeof policyContent !== 'string' || !policyContent.trim()) {
+        return res.status(400).json({ error: 'policyContent is required and must be non-empty official policy text' });
+      }
+
+      if (policyContent.length > MAX_POLICY_CONTENT_LENGTH) {
+        return res.status(400).json({
+          error: `policyContent exceeds the maximum allowed length (${MAX_POLICY_CONTENT_LENGTH} characters)`,
+        });
+      }
+
+      const cleanTitle   = policyTitle.trim();
+      const cleanContent = policyContent.trim();
+      const cleanQuery   = (typeof query === 'string' ? query : '').trim() || `Explain this policy: ${cleanTitle}`;
+
+      // ── Call Gemini explain (with automatic fallback) ─────────────────
+      const result = await geminiService.explainPolicy(
+        cleanQuery,
+        cleanTitle,
+        cleanContent,
+        8000   // 8-second timeout
+      );
+
+      return res.json({
+        success: true,
+        explanation:       result.explanation,
+        keyPoints:         result.keyPoints,
+        recommendedAction: result.recommendedAction,
+        source:            result.source,
       });
 
     } catch (err) {
