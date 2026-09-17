@@ -35,4 +35,19 @@ export const api = {
   put:    (path, body)   => apiFetch(path, { method: 'PUT',    body }),
   patch:  (path, body)   => apiFetch(path, { method: 'PATCH',  body }),
   delete: (path)         => apiFetch(path, { method: 'DELETE' }),
+  upload: async (path, formData) => {
+    const res = await fetch(`${BASE}${path}`, {
+      credentials: 'include',
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const err = new Error(data?.error || `HTTP ${res.status}`);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  },
 };

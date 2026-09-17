@@ -97,3 +97,29 @@ CREATE TABLE IF NOT EXISTS policy_scenarios (
   INDEX idx_ps_policy (policy_id),
   CONSTRAINT fk_ps_policy FOREIGN KEY (policy_id) REFERENCES ordinances(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── Student Master List & Import Batches ──────────────────────────────────────
+CREATE TABLE IF NOT EXISTS import_batches (
+  id            VARCHAR(64) PRIMARY KEY,
+  filename      VARCHAR(255) NOT NULL,
+  total_records INT NOT NULL DEFAULT 0,
+  imported_by   VARCHAR(255) NOT NULL,
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS student_records (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  student_no      VARCHAR(64) NOT NULL UNIQUE,
+  email           VARCHAR(255) NOT NULL UNIQUE,
+  department      VARCHAR(255) NOT NULL,
+  program         VARCHAR(255) NOT NULL,
+  full_name       VARCHAR(255) NULL,
+  is_registered   TINYINT(1) NOT NULL DEFAULT 0,
+  import_batch_id VARCHAR(64) NOT NULL,
+  registered_at   TIMESTAMP NULL,
+  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_sr_email (email),
+  INDEX idx_sr_batch (import_batch_id),
+  INDEX idx_sr_lookup (student_no, email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

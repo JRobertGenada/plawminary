@@ -73,7 +73,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} style={{ padding: '28px 32px 32px' }}>
             <div style={{ marginBottom: 18 }}>
               <label style={{ display: 'block', fontSize: '.78rem', fontWeight: 700, color: 'var(--gray-t)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 7 }}>
-                ID Number
+                Student Number
               </label>
               <input
                 type="text"

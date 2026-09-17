@@ -62,15 +62,16 @@ async function startServer() {
   }));
 
   // ─── Routes ───────────────────────────────────────────────────────────────
-  app.use('/api/auth',       require('./routes/auth')(db));
-  app.use('/api/ordinances', require('./routes/ordinances')(db));
-  app.use('/api/comments',   require('./routes/comments')(db));
-  app.use('/api/progress',   require('./routes/progress')(db));
-  app.use('/api/admin',      require('./routes/admin')(db));
+  app.use('/api/auth',           require('./routes/auth')(db));
+  app.use('/api/ordinances',     require('./routes/ordinances')(db));
+  app.use('/api/comments',       require('./routes/comments')(db));
+  app.use('/api/progress',       require('./routes/progress')(db));
+  app.use('/api/admin/students', require('./routes/students')(db));
   app.use('/api/admin/handbook', require('./routes/handbook')(db));
-  app.use('/api/handbook',   require('./routes/handbook')(db));
-  app.use('/api/page-views', require('./routes/pageviews')(db));
-  app.use('/api/ai',         require('./routes/ai')(db));
+  app.use('/api/admin',          require('./routes/admin')(db));
+  app.use('/api/handbook',       require('./routes/handbook')(db));
+  app.use('/api/page-views',     require('./routes/pageviews')(db));
+  app.use('/api/ai',             require('./routes/ai')(db));
 
   // Health check
   app.get('/api/health', async (req, res) => {

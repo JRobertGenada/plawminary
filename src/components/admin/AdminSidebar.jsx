@@ -1,10 +1,11 @@
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/logo.png';
-import { LayoutDashboard, ClipboardList, History, BarChart3, MessageSquare, LogOut, X, BookOpen } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, History, BarChart3, MessageSquare, LogOut, X, BookOpen, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const NAV = [
   { id:'overview',    icon: <LayoutDashboard size={18} />, label:'Overview' },
+  { id:'students',    icon: <Users size={18} />,           label:'Student Master List' },
   { id:'policies',    icon: <ClipboardList size={18} />,   label:'Manage Policies' },
   { id:'handbook',    icon: <BookOpen size={18} />,        label:'Handbook Ingestion' },
   { id:'versions',    icon: <History size={18} />,         label:'Version Control' },

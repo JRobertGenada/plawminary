@@ -76,6 +76,151 @@ module.exports = (db) => {
     }
   });
 
+  // GET /api/admin/users/reset-preview — preflight summary before student accounts reset
+  router.get('/users/reset-preview', async (req, res, next) => {
+    try {
+      const [students] = await db.query(
+        "SELECT id, name, email, role FROM users WHERE role IN ('user', 'student') AND role != 'admin' AND id != 'admin'"
+      );
+      const [[adminCount]] = await db.query(
+        "SELECT COUNT(*) as c FROM users WHERE role = 'admin'"
+      );
+      const [[masterRegistered]] = await db.query(
+        "SELECT COUNT(*) as c FROM student_records WHERE is_registered = 1"
+      );
+
+      let progressCount = 0;
+      let commentsCount = 0;
+
+      if (students.length > 0) {
+        const studentIds = students.map((s) => s.id);
+        const [[prog]] = await db.query(
+          "SELECT COUNT(*) as c FROM progress WHERE user_id IN (?)",
+          [studentIds]
+        );
+        const [[comm]] = await db.query(
+          "SELECT COUNT(*) as c FROM comments WHERE user_id IN (?)",
+          [studentIds]
+        );
+        progressCount = prog?.c || 0;
+        commentsCount = comm?.c || 0;
+      }
+
+      res.json({
+        studentAccountsCount: students.length,
+        adminAccountsCount: adminCount?.c || 0,
+        masterRegisteredCount: masterRegistered?.c || 0,
+        cascadedProgressCount: progressCount,
+        cascadedCommentsCount: commentsCount,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // POST /api/admin/users/reset-students — safe admin-only student account reset
+  router.post('/users/reset-students', async (req, res, next) => {
+    let conn;
+    try {
+      conn = await db.getConnection();
+      await conn.beginTransaction();
+
+      // 1. Identify all student accounts to be deleted, explicitly preserving admins
+      const [students] = await conn.query(
+        "SELECT id, email, role FROM users WHERE role IN ('user', 'student') AND role != 'admin' AND id != 'admin'"
+      );
+      const [[adminCountRow]] = await conn.query(
+        "SELECT COUNT(*) as c FROM users WHERE role = 'admin'"
+      );
+      const preservedAdminCount = adminCountRow?.c || 0;
+
+      if (students.length === 0) {
+        // Also ensure any lingering is_registered flags are cleared
+        const [resetRes] = await conn.query(
+          "UPDATE student_records SET is_registered = 0, registered_at = NULL WHERE is_registered = 1"
+        );
+        await conn.commit();
+        return res.json({
+          success: true,
+          deletedCount: 0,
+          resetRecordsCount: resetRes.affectedRows || 0,
+          cascadedProgressCount: 0,
+          cascadedCommentsCount: 0,
+          preservedAdminCount,
+          message: 'No student accounts found to reset. Master list registration status verified.',
+        });
+      }
+
+      const studentIds = students.map((s) => s.id);
+      const studentEmails = students.map((s) => s.email).filter(Boolean);
+
+      // Pre-count cascaded items for summary report
+      const [[progRow]] = await conn.query(
+        "SELECT COUNT(*) as c FROM progress WHERE user_id IN (?)",
+        [studentIds]
+      );
+      const [[commRow]] = await conn.query(
+        "SELECT COUNT(*) as c FROM comments WHERE user_id IN (?)",
+        [studentIds]
+      );
+
+      const cascadedProgressCount = progRow?.c || 0;
+      const cascadedCommentsCount = commRow?.c || 0;
+
+      // 2. Reset student_records.is_registered to 0 for corresponding master-list records
+      let resetSql = "UPDATE student_records SET is_registered = 0, registered_at = NULL WHERE is_registered = 1";
+      const resetParams = [];
+
+      if (studentIds.length > 0) {
+        resetSql += " OR LOWER(TRIM(student_no)) IN (?)";
+        resetParams.push(studentIds.map((id) => String(id).toLowerCase().trim()));
+      }
+      if (studentEmails.length > 0) {
+        resetSql += " OR LOWER(TRIM(email)) IN (?)";
+        resetParams.push(studentEmails.map((m) => String(m).toLowerCase().trim()));
+      }
+
+      const [resetResult] = await conn.query(resetSql, resetParams);
+      const resetRecordsCount = resetResult.affectedRows || 0;
+
+      // 3. Nullify page_views user_id references for clean telemetry (page_views has no FK constraint)
+      await conn.query(
+        "UPDATE page_views SET user_id = NULL WHERE user_id IN (?)",
+        [studentIds]
+      );
+
+      // 4. Delete the student accounts (comments and progress cascade automatically via FK)
+      const [deleteResult] = await conn.query(
+        "DELETE FROM users WHERE role IN ('user', 'student') AND role != 'admin' AND id != 'admin'"
+      );
+      const deletedCount = deleteResult.affectedRows || 0;
+
+      // 5. Commit transaction
+      await conn.commit();
+
+      return res.json({
+        success: true,
+        deletedCount,
+        resetRecordsCount,
+        cascadedProgressCount,
+        cascadedCommentsCount,
+        preservedAdminCount,
+        message: `Successfully deleted ${deletedCount} student account(s), preserved ${preservedAdminCount} admin account(s), and reset master list registration status.`,
+      });
+    } catch (err) {
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch (rbErr) {
+          console.error('Error during reset rollback:', rbErr);
+        }
+      }
+      next(err);
+    } finally {
+      if (conn) conn.release();
+    }
+  });
+
   // ── Stats & Analytics ──────────────────────────────────────────────────────
 
   // GET /api/admin/stats — dashboard KPIs + analytics

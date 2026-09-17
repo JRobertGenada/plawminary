@@ -1,5 +1,6 @@
 /**
  * routes/auth.js — Login / logout / session check / registration endpoints
+ * Enforces Student Master List Authentication for student account registration.
  */
 const express = require('express');
 const bcrypt = require('bcrypt');
@@ -7,32 +8,44 @@ const router = express.Router();
 
 module.exports = (db) => {
 
-  // POST /api/auth/register
+  // POST /api/auth/register — Student self-registration guarded by master list
   router.post('/register', async (req, res, next) => {
+    let conn;
     try {
-      const { studentId, fullName, dept, email, password, confirmPassword } = req.body;
+      const {
+        studentId,
+        studentNo,
+        fullName,
+        dept,
+        email,
+        password,
+        confirmPassword,
+      } = req.body;
 
-      // ── Required field validation ─────────────────────────────────────────
-      if (!studentId || !fullName || !dept || !email || !password || !confirmPassword) {
-        return res.status(400).json({ error: 'All fields are required.' });
+      const rawId = (studentId || studentNo || '').trim();
+      const mail  = (email || '').trim().toLowerCase();
+
+      // ── 1. Validate required fields ───────────────────────────────────────
+      if (!rawId) {
+        return res.status(400).json({ error: 'Student Number is required.' });
+      }
+      if (!mail) {
+        return res.status(400).json({ error: 'Email address is required.' });
+      }
+      if (!password) {
+        return res.status(400).json({ error: 'Password is required.' });
+      }
+      if (!confirmPassword) {
+        return res.status(400).json({ error: 'Please confirm your password.' });
       }
 
-      const id         = studentId.trim();
-      const name       = fullName.trim();
-      const department = dept.trim();
-      const mail       = email.trim().toLowerCase();
-
-      if (!id)         return res.status(400).json({ error: 'Student ID cannot be blank.' });
-      if (!name)       return res.status(400).json({ error: 'Full name cannot be blank.' });
-      if (!department) return res.status(400).json({ error: 'College / Department cannot be blank.' });
-
-      // ── Email format ──────────────────────────────────────────────────────
+      // ── 2. Validate email format ──────────────────────────────────────────
       const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRx.test(mail)) {
         return res.status(400).json({ error: 'Please enter a valid email address.' });
       }
 
-      // ── Password rules ────────────────────────────────────────────────────
+      // ── 3. Password rules ──────────────────────────────────────────────────
       if (password.length < 8) {
         return res.status(400).json({ error: 'Password must be at least 8 characters.' });
       }
@@ -40,45 +53,111 @@ module.exports = (db) => {
         return res.status(400).json({ error: 'Passwords do not match.' });
       }
 
-      // ── Duplicate checks ──────────────────────────────────────────────────
-      const [byId] = await db.query('SELECT id FROM users WHERE id = ?', [id]);
-      if (byId.length > 0) {
-        return res.status(409).json({ error: 'Student ID is already registered.' });
-      }
-
-      const [byEmail] = await db.query('SELECT id FROM users WHERE email = ?', [mail]);
-      if (byEmail.length > 0) {
-        return res.status(409).json({ error: 'Email address is already registered.' });
-      }
-
-      // ── Hash & insert ─────────────────────────────────────────────────────
-      const hash = await bcrypt.hash(password, 10);
-
-      await db.query(
-        'INSERT INTO users (id, name, dept, role, email, password_hash) VALUES (?, ?, ?, ?, ?, ?)',
-        [id, name, department, 'user', mail, hash]
+      // ── 4. Find matching student_records entry using BOTH student_no & email
+      const [matchedRecords] = await db.query(
+        `SELECT * FROM student_records
+         WHERE LOWER(TRIM(student_no)) = LOWER(TRIM(?))
+           AND LOWER(TRIM(email)) = LOWER(TRIM(?))`,
+        [rawId, mail]
       );
 
-      // Return success — do NOT start a session; user must log in explicitly.
-      return res.status(201).json({ success: true, message: 'Account created successfully. You may now log in.' });
+      // ── 5. Reject unmatched records ────────────────────────────────────────
+      if (matchedRecords.length === 0) {
+        return res.status(400).json({
+          error: 'Student record not found in the authorized master list. Please verify your Student Number and Email or contact your college administrator.',
+        });
+      }
+
+      const masterRecord = matchedRecords[0];
+
+      // ── 6. Reject students who already have an account ────────────────────
+      if (masterRecord.is_registered === 1) {
+        return res.status(409).json({
+          error: 'This student account has already been registered. Please sign in instead.',
+        });
+      }
+
+      const [existingUsers] = await db.query(
+        'SELECT id, email FROM users WHERE LOWER(id) = LOWER(?) OR (email IS NOT NULL AND LOWER(email) = LOWER(?))',
+        [rawId, mail]
+      );
+
+      if (existingUsers.length > 0) {
+        return res.status(409).json({
+          error: 'An account with this Student Number or Email already exists. Please sign in instead.',
+        });
+      }
+
+      // ── 7. Hash password securely using bcrypt ─────────────────────────────
+      const hash = await bcrypt.hash(password, 10);
+
+      // Resolve display name and department from form or master record
+      const displayName = (fullName && fullName.trim())
+        ? fullName.trim()
+        : (masterRecord.full_name && masterRecord.full_name.trim())
+          ? masterRecord.full_name.trim()
+          : masterRecord.student_no;
+
+      const department = masterRecord.department || dept || '';
+
+      // ── 8. Create account & mark master record as registered in transaction ─
+      conn = await db.getConnection();
+      await conn.beginTransaction();
+
+      await conn.query(
+        `INSERT INTO users (id, name, dept, role, email, password_hash, student_record_id)
+         VALUES (?, ?, ?, 'user', ?, ?, ?)`,
+        [masterRecord.student_no, displayName, department, mail, hash, masterRecord.id]
+      );
+
+      await conn.query(
+        `UPDATE student_records
+         SET is_registered = 1, registered_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [masterRecord.id]
+      );
+
+      await conn.commit();
+
+      // ── 9. Return clear, user-friendly success response ───────────────────
+      return res.status(201).json({
+        success: true,
+        message: 'Account created successfully! You may now sign in with your credentials.',
+      });
 
     } catch (err) {
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch (rbErr) {
+          console.error('Error during registration rollback:', rbErr);
+        }
+      }
       next(err);
+    } finally {
+      if (conn) conn.release();
     }
   });
 
-  // POST /api/auth/login
+  // POST /api/auth/login — Login with either Student ID or Email
   router.post('/login', async (req, res, next) => {
     try {
       const { studentId, password } = req.body;
       if (!studentId || !password) {
-        return res.status(400).json({ error: 'Student ID and password are required.' });
+        return res.status(400).json({ error: 'Student ID / Email and password are required.' });
       }
 
-      const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [studentId.trim()]);
+      const identifier = studentId.trim();
+      const lowerId = identifier.toLowerCase();
+
+      const [rows] = await db.query(
+        'SELECT * FROM users WHERE LOWER(id) = ? OR (email IS NOT NULL AND LOWER(email) = ?)',
+        [lowerId, lowerId]
+      );
+
       const user = rows[0];
       if (!user) {
-        return res.status(401).json({ error: 'Invalid ID or password. Please try again.' });
+        return res.status(401).json({ error: 'Invalid Student ID or password. Please try again.' });
       }
 
       const hash = user.password_hash.startsWith('$2y$')
@@ -87,7 +166,7 @@ module.exports = (db) => {
 
       const match = await bcrypt.compare(password, hash);
       if (!match) {
-        return res.status(401).json({ error: 'Invalid ID or password. Please try again.' });
+        return res.status(401).json({ error: 'Invalid Student ID or password. Please try again.' });
       }
 
       const profile = { id: user.id, name: user.name, dept: user.dept, role: user.role };

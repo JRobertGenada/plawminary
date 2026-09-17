@@ -12,7 +12,8 @@
     "seed:node": "node server/db/seed.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:students": "node server/tests/student_auth_test.js"
   },
   "dependencies": {
     "fuse.js": "^7.3.0",
