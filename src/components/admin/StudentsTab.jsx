@@ -17,7 +17,6 @@ import {
   Database,
   Check,
   X,
-  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   RotateCcw,
@@ -610,20 +609,6 @@ export default function StudentsTab() {
       {/* ── Tab Content: Upload Roster ── */}
       {subTab === 'upload' && (
         <div className="bg-white rounded-b-xl border border-t-0 border-gray-200 p-6 space-y-6">
-          {/* Instructions banner */}
-          <div className="bg-[#0F4F2C]/5 border border-[#0F4F2C]/20 rounded-xl p-4 flex items-start gap-3.5">
-            <ShieldCheck size={22} className="text-[#0F4F2C] flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-gray-700 leading-relaxed space-y-1">
-              <div className="font-bold text-gray-900 text-sm">Roster Ingestion Guidelines</div>
-              <div>
-                Upload official student rosters formatted in <strong>CSV</strong> or <strong>Excel (.xlsx, .xls)</strong>.
-                Required column headers are: <code className="bg-white px-1.5 py-0.5 rounded text-[#0F4F2C] font-mono font-bold">student_no</code>, <code className="bg-white px-1.5 py-0.5 rounded text-[#0F4F2C] font-mono font-bold">email</code>, <code className="bg-white px-1.5 py-0.5 rounded text-[#0F4F2C] font-mono font-bold">department</code>, and <code className="bg-white px-1.5 py-0.5 rounded text-[#0F4F2C] font-mono font-bold">program</code> (optional: <code className="bg-white px-1.5 py-0.5 rounded text-gray-600 font-mono">full_name</code>).
-              </div>
-              <div className="text-amber-800 font-medium pt-1">
-                ⚠️ Never include student passwords in uploaded files. Students will set their own passwords when registering.
-              </div>
-            </div>
-          </div>
 
           {/* Upload Dropzone */}
           {!previewData && (
