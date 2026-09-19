@@ -101,6 +101,15 @@ async function startServer() {
 
   // ─── Static Files & SPA Fallback ──────────────────────────────────────────
   const distPath = path.join(__dirname, '../dist');
+
+  // Service Worker endpoint with explicit headers for reliable PWA registration & updates
+  app.get('/sw.js', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.sendFile(path.join(distPath, 'sw.js'));
+  });
+
   app.use(express.static(distPath));
 
   app.get('*', (req, res) => {
