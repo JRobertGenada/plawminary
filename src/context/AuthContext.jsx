@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      const saved = sessionStorage.getItem('plawminary_user');
+      const saved = sessionStorage.getItem('plawminary_user') || localStorage.getItem('plawminary_user');
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
       const data = await api.post('/auth/login', { studentId, password });
       setUser(data.user);
       sessionStorage.setItem('plawminary_user', JSON.stringify(data.user));
+      localStorage.setItem('plawminary_user', JSON.stringify(data.user));
       return { success: true, user: data.user };
     } catch (err) {
       // Provide a clear, actionable error — no silent mock fallback in production.
@@ -34,6 +35,7 @@ export function AuthProvider({ children }) {
     try { await api.post('/auth/logout'); } catch {}
     setUser(null);
     sessionStorage.removeItem('plawminary_user');
+    localStorage.removeItem('plawminary_user');
   }
 
   return (

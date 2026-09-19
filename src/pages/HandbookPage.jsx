@@ -3,14 +3,29 @@ import { useLocation } from 'react-router-dom';
 import { HANDBOOK_CHAPTERS, ALL_HANDBOOK_SECTIONS, findSectionByPage } from '../data/handbookSections';
 import { usePdfProgress } from '../hooks/usePdfProgress';
 import PdfViewer from '../components/PdfViewer';
-import { Book, Menu, X, Search, ChevronRight, Check } from 'lucide-react';
+import {
+  Book, Menu, X, Search, ChevronRight, Check,
+  Download, BookmarkCheck, Trash2, WifiOff, AlertTriangle, Loader2
+} from 'lucide-react';
 import { searchHandbook } from '../utils/searchUtility';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../hooks/useApi';
+import ConfirmationModal from '../components/ConfirmationModal';
+import {
+  saveHandbookOffline,
+  removeHandbookOffline,
+  isHandbookSaved,
+  getSavedHandbook,
+  syncVersionOutdatedStatus,
+  subscribeOfflineChanges
+} from '../utils/offlineStorage';
 
 // Fallback local PDF import
 import pdfFallbackFile from '../assets/handbook.pdf';
 
 export default function HandbookPage() {
   const { state } = useLocation();
+  const { user } = useAuth();
   const [targetPage, setTargetPage] = useState(null);
   const [totalPages, setTotalPages] = useState(0);
   const [openChapters, setOpenChapters] = useState({ ch1: true });
@@ -20,6 +35,19 @@ export default function HandbookPage() {
   const [activeSectionOverride, setActiveSectionOverride] = useState(null);
   const [pdfUrl, setPdfUrl] = useState('/api/handbook/active-pdf');
   const hasJumped = useRef(false); // prevent re-firing the state-based jump
+
+  // Offline handbook states
+  const [isSaved, setIsSaved] = useState(false);
+  const [savedHandbookInfo, setSavedHandbookInfo] = useState(null);
+  const [isOutdated, setIsOutdated] = useState(false);
+  const [activeVersion, setActiveVersion] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [isOfflineSource, setIsOfflineSource] = useState(false);
+  const [removeModalOpen, setRemoveModalOpen] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const blobUrlRef = useRef(null);
 
   const {
     currentPage,
@@ -128,6 +156,140 @@ export default function HandbookPage() {
 
   const isMobile = windowWidth <= 992;
 
+  // ── Offline Handbook initialization & version sync ────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initHandbookSource() {
+      // 1. Check if handbook is saved in IndexedDB
+      try {
+        const savedHb = await getSavedHandbook();
+        if (cancelled) return;
+        if (savedHb?.pdfBlob) {
+          setIsSaved(true);
+          setSavedHandbookInfo(savedHb);
+
+          // If offline or explicitly navigated with offline flag, render from stored blob
+          if (!navigator.onLine || state?.offline) {
+            const objectUrl = URL.createObjectURL(savedHb.pdfBlob);
+            blobUrlRef.current = objectUrl;
+            setPdfUrl(objectUrl);
+            setIsOfflineSource(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load offline handbook status:', err);
+      }
+
+      // 2. If online, check current active version from server
+      if (navigator.onLine) {
+        try {
+          const ver = await api.get('/handbook/active-version');
+          if (cancelled) return;
+          setActiveVersion(ver);
+
+          // Sync outdated status safely
+          await syncVersionOutdatedStatus(ver);
+          const updatedHb = await getSavedHandbook();
+          if (cancelled) return;
+          if (updatedHb) {
+            setSavedHandbookInfo(updatedHb);
+            setIsOutdated(!!updatedHb.isOutdated);
+          }
+        } catch (_) {}
+      }
+    }
+
+    initHandbookSource();
+
+    // Listen for storage changes across tabs/components
+    const unsub = subscribeOfflineChanges(async () => {
+      if (cancelled) return;
+      const hb = await getSavedHandbook();
+      setIsSaved(!!hb?.pdfBlob);
+      setSavedHandbookInfo(hb);
+      setIsOutdated(!!hb?.isOutdated);
+    });
+
+    return () => {
+      cancelled = true;
+      unsub();
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+      }
+    };
+  }, [state?.offline]);
+
+  async function handleSaveHandbookOffline() {
+    setSaving(true);
+    try {
+      // 1. Fetch active version metadata
+      let ver = activeVersion;
+      if (!ver && navigator.onLine) {
+        try {
+          ver = await api.get('/handbook/active-version');
+          setActiveVersion(ver);
+        } catch (_) {}
+      }
+
+      // 2. Download the approved PDF blob
+      let blob = null;
+      try {
+        const res = await fetch('/api/handbook/active-pdf');
+        if (res.ok) {
+          blob = await res.blob();
+        }
+      } catch (_) {}
+
+      // Fallback if server stream is unavailable
+      if (!blob && pdfFallbackFile) {
+        try {
+          const res = await fetch(pdfFallbackFile);
+          if (res.ok) blob = await res.blob();
+        } catch (_) {}
+      }
+
+      if (!blob) throw new Error('Could not download handbook PDF file.');
+
+      // 3. Save actual Blob to IndexedDB
+      await saveHandbookOffline({
+        pdfBlob: blob,
+        versionInfo: ver,
+        totalPages,
+        studentId: user?.id,
+      });
+
+      setIsSaved(true);
+      setIsOutdated(false);
+      const sizeMb = (blob.size / (1024 * 1024)).toFixed(1);
+      setSuccessMessage(`The Student Handbook PDF (${sizeMb} MB) has been saved offline. You can now read it without internet access.`);
+      setSuccessModalOpen(true);
+    } catch (err) {
+      console.error('Failed to save handbook offline:', err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmRemove() {
+    setRemoving(true);
+    try {
+      await removeHandbookOffline();
+      setIsSaved(false);
+      setSavedHandbookInfo(null);
+      setIsOutdated(false);
+      setRemoveModalOpen(false);
+      if (isOfflineSource) {
+        setPdfUrl('/api/handbook/active-pdf');
+        setIsOfflineSource(false);
+      }
+    } catch (err) {
+      console.error('Failed to remove handbook offline:', err);
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   return (
     <div style={{ height: 'calc(100vh - 70px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--gray-bg)', position: 'relative' }}>
 
@@ -136,7 +298,7 @@ export default function HandbookPage() {
         <div style={{ height: 4, background: 'rgba(255,255,255,.15)' }}>
           <div style={{ height: '100%', width: `${percentage}%`, background: 'var(--gold)', transition: 'width .6s ease' }} />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', flexWrap: 'wrap' }}>
           {isMobile && (
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -150,7 +312,63 @@ export default function HandbookPage() {
             <Book size={18} color="var(--gold)" /> PLSP Handbook
           </span>
 
+          {isOfflineSource && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999, background: 'rgba(244,197,66,0.2)', color: 'var(--gold)', fontSize: '.72rem', fontWeight: 800, border: '1px solid rgba(244,197,66,0.35)' }}>
+              <WifiOff size={12} /> Offline Copy
+            </span>
+          )}
+
+          {isOutdated && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 999, background: '#FEF3C7', color: '#92400E', fontSize: '.72rem', fontWeight: 800, border: '1px solid #FCD34D' }}>
+              <AlertTriangle size={12} />
+              <span>Outdated</span>
+              <button
+                onClick={handleSaveHandbookOffline}
+                disabled={saving}
+                style={{ background: '#D97706', color: '#fff', border: 'none', borderRadius: 6, padding: '2px 7px', fontSize: '.68rem', fontWeight: 800, cursor: 'pointer' }}
+              >
+                {saving ? 'Updating...' : 'Update'}
+              </button>
+            </div>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+            {/* Save Offline / Saved Offline button */}
+            {isSaved ? (
+              <button
+                onClick={() => setRemoveModalOpen(true)}
+                title="Handbook is saved for offline reading. Click to manage or remove."
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '5px 12px', borderRadius: 8,
+                  background: 'rgba(244,197,66,0.18)',
+                  border: '1px solid rgba(244,197,66,0.4)',
+                  color: 'var(--gold)', fontSize: '.76rem', fontWeight: 700,
+                  cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
+                  transition: 'all .2s'
+                }}
+              >
+                <BookmarkCheck size={14} /> Saved Offline
+              </button>
+            ) : (
+              <button
+                onClick={handleSaveHandbookOffline}
+                disabled={saving}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '5px 12px', borderRadius: 8,
+                  background: 'var(--gold)', color: 'var(--g-dark)',
+                  border: 'none', fontSize: '.76rem', fontWeight: 800,
+                  cursor: saving ? 'wait' : 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
+                  boxShadow: '0 2px 8px rgba(244,197,66,0.3)',
+                  transition: 'all .2s'
+                }}
+              >
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                {saving ? 'Downloading PDF...' : 'Save Offline'}
+              </button>
+            )}
+
             {!isMobile && <span style={{ fontSize: '.78rem', color: 'rgba(255,255,255,.6)' }}>{sectionsReached}/{totalSections} reached</span>}
             <span style={{ background: 'var(--gold)', color: 'var(--g-dark)', padding: '3px 10px', borderRadius: 999, fontSize: '.75rem', fontWeight: 800 }}>{percentage}%</span>
             {highestPage > 0 && !isMobile && (
@@ -274,6 +492,31 @@ export default function HandbookPage() {
           />
         </div>
       </div>
+
+      {/* Centered Remove Handbook Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={removeModalOpen}
+        type="danger"
+        title="Remove Handbook from Offline Storage"
+        message="Are you sure you want to remove the approved Student Handbook PDF from your offline storage? You will need an internet connection to re-download the file."
+        confirmText={removing ? "Removing..." : "Remove Handbook"}
+        cancelText="Keep Saved"
+        loading={removing}
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setRemoveModalOpen(false)}
+      />
+
+      {/* Centered Save Success Modal */}
+      <ConfirmationModal
+        isOpen={successModalOpen}
+        type="success"
+        isResult={true}
+        title="Handbook Saved Offline"
+        message={successMessage}
+        confirmText="Got it"
+        onConfirm={() => setSuccessModalOpen(false)}
+        onCancel={() => setSuccessModalOpen(false)}
+      />
     </div>
   );
 }

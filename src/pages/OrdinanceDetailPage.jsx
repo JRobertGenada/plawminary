@@ -1,9 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Lightbulb, ScrollText, ClipboardList, Info, Printer, Link2, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, Sparkles, AlertCircle, RotateCcw, BookOpen, ArrowRight } from 'lucide-react';
+import {
+  Lightbulb, ScrollText, ClipboardList, Info, Printer, Link2,
+  ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, Sparkles,
+  AlertCircle, RotateCcw, BookOpen, ArrowRight, Bookmark, BookmarkCheck,
+  Download, Trash2, WifiOff, Loader2
+} from 'lucide-react';
 import { BADGE_MAP } from '../data/ordinances';
 import { api } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
 import CommentsPanel from '../components/CommentsPanel';
+import ConfirmationModal from '../components/ConfirmationModal';
+import {
+  saveOrdinanceOffline,
+  removeOrdinanceOffline,
+  isOrdinanceSaved,
+  getSavedOrdinance,
+  subscribeOfflineChanges
+} from '../utils/offlineStorage';
 
 function Badge({ catK, cat }) {
   const s = BADGE_MAP[catK] || { bg: '#F3F4F6', color: '#374151' };
@@ -240,22 +254,38 @@ function AiExplanationPanel({ ord }) {
 export default function OrdinanceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [ord, setOrd] = useState(null);
   const [related, setRelated] = useState([]);
   const [notFound, setNotFound] = useState(false);
 
-  // ── Fetch ordinance from API ──────────────────────────────────────────────
+  // Offline storage states
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [isOfflineCopy, setIsOfflineCopy] = useState(false);
+  const [removeModalOpen, setRemoveModalOpen] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+
+  // ── Fetch ordinance from API with IndexedDB offline fallback ───────────────
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
 
+    // Initial check if saved offline
+    isOrdinanceSaved(id).then(saved => {
+      if (!cancelled) setIsSaved(saved);
+    });
+
     api.get(`/ordinances/${id}`)
       .then(data => {
         if (cancelled) return;
         setOrd(data);
+        setIsOfflineCopy(false);
 
         // Fire page-view event (fire-and-forget)
         api.post('/page-views', { targetType: 'ordinance', targetId: String(id) }).catch(() => { });
@@ -269,15 +299,70 @@ export default function OrdinanceDetailPage() {
         }
         setLoading(false);
       })
-      .catch(err => {
+      .catch(async err => {
         if (cancelled) return;
+        // Network or API failure: attempt loading from IndexedDB
+        try {
+          const offlineOrd = await getSavedOrdinance(id);
+          if (offlineOrd) {
+            setOrd(offlineOrd);
+            setIsOfflineCopy(true);
+            setIsSaved(true);
+            setLoading(false);
+            return;
+          }
+        } catch (_) {}
+
         if (err.status === 404) setNotFound(true);
         else console.error('[OrdinanceDetailPage] API error:', err);
         setLoading(false);
       });
 
-    return () => { cancelled = true; };
+    // Subscribe to offline change events
+    const unsub = subscribeOfflineChanges((detail) => {
+      if (!cancelled && (detail.id === String(id) || !detail.id)) {
+        isOrdinanceSaved(id).then(saved => setIsSaved(saved));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [id]);
+
+  async function handleSaveOffline() {
+    if (!ord) return;
+    setSaving(true);
+    try {
+      let activeVer = null;
+      try {
+        activeVer = await api.get('/handbook/active-version');
+      } catch (_) {}
+      await saveOrdinanceOffline(ord, activeVer, user?.id);
+      setIsSaved(true);
+      setModalMessage(`"${ord.title}" has been saved to your browser's offline storage. You can now access and read it anytime without an internet connection.`);
+      setSuccessModalOpen(true);
+    } catch (err) {
+      console.error('Failed to save ordinance offline:', err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmRemove() {
+    if (!ord) return;
+    setRemoving(true);
+    try {
+      await removeOrdinanceOffline(ord.id);
+      setIsSaved(false);
+      setRemoveModalOpen(false);
+    } catch (err) {
+      console.error('Failed to remove ordinance offline:', err);
+    } finally {
+      setRemoving(false);
+    }
+  }
 
   function handleCopy() {
     if (navigator.clipboard) {
@@ -344,18 +429,71 @@ export default function OrdinanceDetailPage() {
 
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 260 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
                 <Badge catK={ord.catK} cat={ord.cat} />
                 <span style={{ fontSize: '.85rem', color: '#fff', fontWeight: 600, letterSpacing: '.05em' }}>{ord.ref}</span>
+                {isOfflineCopy && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 999, fontSize: '.72rem', fontWeight: 800, background: 'rgba(244,197,66,0.2)', color: 'var(--gold)', border: '1px solid rgba(244,197,66,0.35)' }}>
+                    <WifiOff size={12} /> Offline Copy
+                  </span>
+                )}
+                {isSaved && !isOfflineCopy && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 999, fontSize: '.72rem', fontWeight: 800, background: 'rgba(209,250,229,0.2)', color: '#6EE7B7', border: '1px solid rgba(110,231,183,0.35)' }}>
+                    <BookmarkCheck size={12} /> Available Offline
+                  </span>
+                )}
               </div>
               <h1 style={{ fontFamily: '"DM Serif Display",serif', fontSize: 'clamp(1.6rem,3.8vw,2.4rem)', color: '#fff', lineHeight: 1.25, maxWidth: 700 }}>{ord.title}</h1>
             </div>
-            <button onClick={() => navigate('/ordinances')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 10, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', color: '#fff', fontSize: '.82rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', transition: 'all .2s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.2)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
-            >
-              <ChevronLeft size={16} /> Back to List
-            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {isSaved ? (
+                <button
+                  onClick={() => setRemoveModalOpen(true)}
+                  title="Remove from offline storage"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 7,
+                    padding: '9px 16px', borderRadius: 10,
+                    background: 'rgba(244,197,66,0.15)',
+                    border: '1px solid rgba(244,197,66,0.35)',
+                    color: 'var(--gold)', fontSize: '.82rem', fontWeight: 700,
+                    cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
+                    transition: 'all .2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(244,197,66,0.25)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(244,197,66,0.15)'}
+                >
+                  <BookmarkCheck size={16} /> Saved Offline
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveOffline}
+                  disabled={saving}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 7,
+                    padding: '9px 16px', borderRadius: 10,
+                    background: 'var(--gold)', color: 'var(--g-dark)',
+                    border: 'none', fontSize: '.82rem', fontWeight: 800,
+                    cursor: saving ? 'wait' : 'pointer',
+                    fontFamily: '"Plus Jakarta Sans",sans-serif',
+                    boxShadow: '0 4px 14px rgba(244,197,66,0.25)',
+                    transition: 'all .2s'
+                  }}
+                  onMouseEnter={e => !saving && (e.currentTarget.style.transform = 'translateY(-1px)')}
+                  onMouseLeave={e => !saving && (e.currentTarget.style.transform = 'none')}
+                >
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  {saving ? 'Saving...' : 'Save Offline'}
+                </button>
+              )}
+
+              <button onClick={() => navigate('/ordinances')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 10, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', color: '#fff', fontSize: '.82rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', transition: 'all .2s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
+              >
+                <ChevronLeft size={16} /> Back to List
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -436,8 +574,50 @@ export default function OrdinanceDetailPage() {
 
             {/* Quick actions */}
             <div className="p-5" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
-              <div style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-t)', marginBottom: 14 }}>Resources</div>
+              <div style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-t)', marginBottom: 14 }}>Resources & Actions</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {/* Offline action button */}
+                {isSaved ? (
+                  <button
+                    onClick={() => setRemoveModalOpen(true)}
+                    style={{
+                      width: '100%', padding: '11px 14px', borderRadius: 10,
+                      border: '1.5px solid rgba(244,197,66,0.45)',
+                      background: 'rgba(244,197,66,0.1)',
+                      color: 'var(--g-dark)', fontSize: '.84rem', fontWeight: 700,
+                      cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      transition: 'all .2s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <BookmarkCheck size={16} color="var(--g-primary)" />
+                      <span>Saved in Offline Library</span>
+                    </div>
+                    <span style={{ fontSize: '.72rem', color: '#DC2626', fontWeight: 700 }}>Remove</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleSaveOffline}
+                    disabled={saving}
+                    style={{
+                      width: '100%', padding: '11px 14px', borderRadius: 10,
+                      border: '1px solid var(--gray-mid)',
+                      background: 'var(--g-pale)',
+                      color: 'var(--g-dark)', fontSize: '.84rem', fontWeight: 700,
+                      cursor: saving ? 'wait' : 'pointer',
+                      fontFamily: '"Plus Jakarta Sans",sans-serif',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      transition: 'all .2s'
+                    }}
+                    onMouseEnter={e => !saving && (e.currentTarget.style.background = '#d1f4e0')}
+                    onMouseLeave={e => !saving && (e.currentTarget.style.background = 'var(--g-pale)')}
+                  >
+                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} color="var(--g-primary)" />}
+                    <span>{saving ? 'Saving to Offline Storage...' : 'Save Policy for Offline Use'}</span>
+                  </button>
+                )}
+
                 <button onClick={() => window.print()} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--gray-mid)', background: 'transparent', color: 'var(--gray-dk)', fontSize: '.84rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--gray-bg)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -481,6 +661,31 @@ export default function OrdinanceDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Centered Remove from Offline Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={removeModalOpen}
+        type="danger"
+        title="Remove from Offline Storage"
+        message={`Are you sure you want to remove "${ord.title}" from your offline saved items? You will need an active internet connection to download it again.`}
+        confirmText={removing ? "Removing..." : "Remove from Offline"}
+        cancelText="Keep Saved"
+        loading={removing}
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setRemoveModalOpen(false)}
+      />
+
+      {/* Centered Save Success Modal */}
+      <ConfirmationModal
+        isOpen={successModalOpen}
+        type="success"
+        isResult={true}
+        title="Saved for Offline Reading"
+        message={modalMessage}
+        confirmText="Got it"
+        onConfirm={() => setSuccessModalOpen(false)}
+        onCancel={() => setSuccessModalOpen(false)}
+      />
     </div>
   );
 }

@@ -326,5 +326,35 @@ module.exports = (db) => {
     }
   });
 
+  // ── 4. GET /api/handbook/active-version — Active handbook version metadata ──
+  router.get('/active-version', async (req, res) => {
+    try {
+      const [rows] = await db.query(
+        "SELECT id, label, description, change_notes, sections, release_date, created_at FROM versions WHERE status = 'active' ORDER BY id DESC LIMIT 1"
+      );
+      if (!rows.length) {
+        return res.json({
+          id: null,
+          label: '2025 Revised',
+          description: 'Official PLSP Student Handbook',
+          releaseDate: new Date().toISOString().split('T')[0],
+        });
+      }
+      const v = rows[0];
+      res.json({
+        id: v.id,
+        label: v.label,
+        description: v.description,
+        changeNotes: v.change_notes,
+        sections: v.sections,
+        releaseDate: v.release_date,
+        createdAt: v.created_at,
+      });
+    } catch (err) {
+      console.error('[handbook/active-version error]', err);
+      res.status(500).json({ error: 'Failed to retrieve active handbook version.' });
+    }
+  });
+
   return router;
 };

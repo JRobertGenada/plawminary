@@ -1,19 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Home, FileText, Book, Settings, LogIn, LogOut, Menu, X } from 'lucide-react';
+import { Home, FileText, Book, Settings, LogIn, LogOut, Menu, X, Bookmark } from 'lucide-react';
 import logo from '../assets/logo.png';
+import { getOfflineSummary, subscribeOfflineChanges } from '../utils/offlineStorage';
 
 export default function Navbar() {
   const { pathname } = useLocation();
   const { user, isLoggedIn, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
 
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
+
+  // Track offline saved count
+  useEffect(() => {
+    let cancelled = false;
+    getOfflineSummary().then(res => {
+      if (!cancelled) setSavedCount(res.totalItems);
+    });
+
+    const unsub = subscribeOfflineChanges(() => {
+      getOfflineSummary().then(res => {
+        if (!cancelled) setSavedCount(res.totalItems);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, []);
 
   // Prevent background scroll when mobile menu is open
   useEffect(() => {
@@ -37,6 +58,7 @@ export default function Navbar() {
     { to: '/', label: 'Home', icon: <Home size={18} /> },
     { to: '/ordinances', label: 'Ordinance Finder', icon: <FileText size={18} /> },
     { to: '/handbook', label: 'Handbook', icon: <Book size={18} /> },
+    { to: '/saved', label: 'Saved', icon: <Bookmark size={18} />, badge: savedCount > 0 ? savedCount : null },
   ];
 
   return (
@@ -73,7 +95,7 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex" style={{ alignItems: 'center', gap: 8 }}>
             <ul style={{ display: 'flex', alignItems: 'center', gap: 4, listStyle: 'none', margin: 0, padding: 0 }}>
-              {links.map(({ to, label, icon }) => {
+              {links.map(({ to, label, icon, badge }) => {
                 const isActive = pathname === to;
                 return (
                   <li key={to}>
@@ -94,7 +116,20 @@ export default function Navbar() {
                       }}
                     >
                       {icon}
-                      {label}
+                      <span>{label}</span>
+                      {badge != null && (
+                        <span style={{
+                          background: 'var(--gold)',
+                          color: 'var(--g-dark)',
+                          fontSize: '.68rem',
+                          fontWeight: 800,
+                          padding: '1px 6px',
+                          borderRadius: 999,
+                          lineHeight: 1.2
+                        }}>
+                          {badge}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
@@ -241,7 +276,7 @@ export default function Navbar() {
           <div style={{ fontSize: '.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.12em', color: 'rgba(255,255,255,0.4)', marginBottom: 4, paddingLeft: 4 }}>
             Navigation
           </div>
-          {links.map(({ to, label, icon }) => {
+          {links.map(({ to, label, icon, badge }) => {
             const isActive = pathname === to;
             return (
               <Link
@@ -264,7 +299,19 @@ export default function Navbar() {
                 }}
               >
                 {icon}
-                {label}
+                <span style={{ flex: 1 }}>{label}</span>
+                {badge != null && (
+                  <span style={{
+                    background: 'var(--gold)',
+                    color: 'var(--g-dark)',
+                    fontSize: '.72rem',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: 999
+                  }}>
+                    {badge}
+                  </span>
+                )}
               </Link>
             );
           })}

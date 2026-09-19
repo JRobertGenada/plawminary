@@ -3,8 +3,10 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Configure PDF.js worker to match the version used by react-pdf
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Configure PDF.js worker using local public worker first (for 100% offline support), with CDN fallback
+pdfjs.GlobalWorkerOptions.workerSrc = typeof window !== 'undefined'
+  ? '/pdf.worker.min.mjs'
+  : `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export default function PdfViewer({ pdfUrl, targetPage, onScrollDone, onPageChange, totalPages, setTotalPages, isMobile, activeSection }) {
   const [currentPage, setCurrentPage] = useState(1);

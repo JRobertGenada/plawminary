@@ -10,6 +10,7 @@ import HandbookPage           from './pages/HandbookPage';
 import AdminPage              from './pages/AdminPage';
 import LoginPage              from './pages/LoginPage';
 import RegisterPage           from './pages/RegisterPage';
+import OfflineSavedPage       from './pages/OfflineSavedPage';
 import AdminRoute             from './components/AdminRoute';
 import ErrorBoundary          from './components/ErrorBoundary';
 
@@ -37,6 +38,7 @@ function AppContent() {
         <Route path="/ordinances/:id" element={<OrdinanceDetailPage />} />
         <Route path="/login"          element={<LoginPage />} />
         <Route path="/register"       element={<RegisterPage />} />
+        <Route path="/saved"          element={<OfflineSavedPage />} />
         <Route path="/admin"          element={
           <AdminRoute><AdminPage /></AdminRoute>
         } />
