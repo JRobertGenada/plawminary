@@ -1,6 +1,6 @@
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/logo.png';
-import { LayoutDashboard, ClipboardList, History, BarChart3, MessageSquare, LogOut, X, BookOpen, Users } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, History, BarChart3, LogOut, X, BookOpen, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const NAV = [
@@ -10,7 +10,6 @@ const NAV = [
   { id:'handbook',    icon: <BookOpen size={18} />,        label:'Handbook Ingestion' },
   { id:'versions',    icon: <History size={18} />,         label:'Version Control' },
   { id:'analytics',   icon: <BarChart3 size={18} />,       label:'Analytics' },
-  { id:'suggestions', icon: <MessageSquare size={18} />,   label:'Suggestions' },
 ];
 
 export default function AdminSidebar({ active, setActive, onCloseMobile }) {

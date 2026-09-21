@@ -90,7 +90,6 @@ module.exports = (db) => {
       );
 
       let progressCount = 0;
-      let commentsCount = 0;
 
       if (students.length > 0) {
         const studentIds = students.map((s) => s.id);
@@ -98,12 +97,7 @@ module.exports = (db) => {
           "SELECT COUNT(*) as c FROM progress WHERE user_id IN (?)",
           [studentIds]
         );
-        const [[comm]] = await db.query(
-          "SELECT COUNT(*) as c FROM comments WHERE user_id IN (?)",
-          [studentIds]
-        );
         progressCount = prog?.c || 0;
-        commentsCount = comm?.c || 0;
       }
 
       res.json({
@@ -111,7 +105,6 @@ module.exports = (db) => {
         adminAccountsCount: adminCount?.c || 0,
         masterRegisteredCount: masterRegistered?.c || 0,
         cascadedProgressCount: progressCount,
-        cascadedCommentsCount: commentsCount,
       });
     } catch (err) {
       next(err);
@@ -159,13 +152,8 @@ module.exports = (db) => {
         "SELECT COUNT(*) as c FROM progress WHERE user_id IN (?)",
         [studentIds]
       );
-      const [[commRow]] = await conn.query(
-        "SELECT COUNT(*) as c FROM comments WHERE user_id IN (?)",
-        [studentIds]
-      );
 
       const cascadedProgressCount = progRow?.c || 0;
-      const cascadedCommentsCount = commRow?.c || 0;
 
       // 2. Reset student_records.is_registered to 0 for corresponding master-list records
       let resetSql = "UPDATE student_records SET is_registered = 0, registered_at = NULL WHERE is_registered = 1";
@@ -203,7 +191,6 @@ module.exports = (db) => {
         deletedCount,
         resetRecordsCount,
         cascadedProgressCount,
-        cascadedCommentsCount,
         preservedAdminCount,
         message: `Successfully deleted ${deletedCount} student account(s), preserved ${preservedAdminCount} admin account(s), and reset master list registration status.`,
       });
@@ -228,20 +215,7 @@ module.exports = (db) => {
     try {
       const [[ordCount]]  = await db.query("SELECT COUNT(*) as c FROM ordinances WHERE status != 'inactive'");
       const [[userCount]] = await db.query("SELECT COUNT(*) as c FROM users WHERE role='user'");
-      const [[commCount]] = await db.query('SELECT COUNT(*) as c FROM comments');
       const [[progCount]] = await db.query('SELECT COUNT(*) as c FROM progress');
-      const [[pendingCount]] = await db.query('SELECT COUNT(*) as c FROM comments WHERE resolved = 0');
-
-      // Comments by type
-      const [byType] = await db.query('SELECT type, COUNT(*) as count FROM comments GROUP BY type');
-
-      // Recent comments (for suggestions panel)
-      const [recent] = await db.query(`
-        SELECT c.*, o.title as ordinance_title
-        FROM comments c
-        LEFT JOIN ordinances o ON o.id = c.ordinance_id
-        ORDER BY c.created_at DESC LIMIT 10
-      `);
 
       // ── Weekly page_views (last 5 weeks) ────────────────────────────────────
       const [weeklyViews] = await db.query(`
@@ -299,57 +273,11 @@ module.exports = (db) => {
       res.json({
         ordinanceCount:  ordCount.c,
         userCount:       userCount.c,
-        commentCount:    commCount.c,
         progressCount:   progCount.c,
-        pendingCount:    pendingCount.c,
-        commentsByType:  byType,
-        recentComments:  recent.map(parseAgrees),
         weeklyViews,
         deptStats,
         topSections: topSectionsWithPct,
       });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // ── Comments / Suggestions ─────────────────────────────────────────────────
-
-  // GET /api/admin/comments — all comments with moderation
-  router.get('/comments', async (req, res, next) => {
-    try {
-      const [rows] = await db.query(`
-        SELECT c.*, o.title as ordinance_title
-        FROM comments c
-        LEFT JOIN ordinances o ON o.id = c.ordinance_id
-        ORDER BY c.created_at DESC
-      `);
-      res.json(rows.map(parseAgrees));
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // PATCH /api/admin/comments/:id/resolve — toggle resolved flag
-  router.patch('/comments/:id/resolve', async (req, res, next) => {
-    try {
-      const [rows] = await db.query('SELECT id, resolved FROM comments WHERE id = ?', [req.params.id]);
-      if (!rows.length) return res.status(404).json({ error: 'Comment not found' });
-
-      const newState = rows[0].resolved ? 0 : 1;
-      await db.query('UPDATE comments SET resolved = ? WHERE id = ?', [newState, req.params.id]);
-      res.json({ success: true, resolved: !!newState });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // DELETE /api/admin/comments/:id — hard delete (admin only)
-  router.delete('/comments/:id', async (req, res, next) => {
-    try {
-      const [result] = await db.query('DELETE FROM comments WHERE id = ?', [req.params.id]);
-      if (result.affectedRows === 0) return res.status(404).json({ error: 'Comment not found' });
-      res.json({ success: true });
     } catch (err) {
       next(err);
     }
@@ -887,8 +815,6 @@ module.exports = (db) => {
       if (ordIds.length > 0) {
         // Delete dependent policy scenarios
         await conn.query('DELETE FROM policy_scenarios WHERE policy_id IN (?)', [ordIds]);
-        // Delete comments attached to these ordinances
-        await conn.query('DELETE FROM comments WHERE ordinance_id IN (?)', [ordIds]);
         // Delete page view analytics
         await conn.query("DELETE FROM page_views WHERE target_type = 'ordinance' AND target_id IN (?)", [ordIds.map(String)]);
         // Delete the ordinances themselves
@@ -935,18 +861,6 @@ module.exports = (db) => {
       conn.release();
     }
   });
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
-  function parseAgrees(r) {
-    let agrees = [];
-    if (typeof r.agrees === 'string') {
-      try { agrees = JSON.parse(r.agrees || '[]'); } catch { agrees = []; }
-    } else if (Array.isArray(r.agrees)) {
-      agrees = r.agrees;
-    }
-    return { ...r, agrees };
-  }
 
   return router;
 };

@@ -64,7 +64,6 @@ async function startServer() {
   // ─── Routes ───────────────────────────────────────────────────────────────
   app.use('/api/auth',           require('./routes/auth')(db));
   app.use('/api/ordinances',     require('./routes/ordinances')(db));
-  app.use('/api/comments',       require('./routes/comments')(db));
   app.use('/api/progress',       require('./routes/progress')(db));
   app.use('/api/admin/students', require('./routes/students')(db));
   app.use('/api/admin/handbook', require('./routes/handbook')(db));
@@ -138,7 +137,6 @@ async function startServer() {
     console.log(`   POST /api/auth/login`);
     console.log(`   POST /api/auth/register`);
     console.log(`   GET  /api/ordinances`);
-    console.log(`   GET  /api/comments?ordinanceId=1`);
     console.log(`   GET  /api/progress  (auth required)`);
     console.log(`   GET  /api/admin/stats (admin only)`);
     console.log(`   POST /api/ai/search`);

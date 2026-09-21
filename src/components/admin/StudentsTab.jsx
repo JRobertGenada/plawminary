@@ -25,7 +25,7 @@ import {
 
 export default function StudentsTab() {
   const [subTab, setSubTab] = useState('upload'); // 'upload' | 'roster' | 'batches'
-  
+
   // Data state
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState([]);
@@ -377,7 +377,7 @@ export default function StudentsTab() {
                     <span>Warning: Irreversible Account Deletion</span>
                   </div>
                   <p className="leading-relaxed text-red-700">
-                    This action deletes all existing student user accounts and their associated reading progress and comments.
+                    This action deletes all existing student user accounts and their associated reading progress.
                     Administrator accounts are <strong>strictly preserved</strong>. Master-list records will <strong>not</strong> be deleted, but their registration status will be reset to allow fresh student registrations.
                   </p>
                 </div>
@@ -447,11 +447,10 @@ export default function StudentsTab() {
                     type="button"
                     onClick={handleExecuteReset}
                     disabled={resetConfirmInput !== 'RESET' || resetLoading}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition shadow-sm ${
-                      resetConfirmInput === 'RESET' && !resetLoading
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition shadow-sm ${resetConfirmInput === 'RESET' && !resetLoading
                         ? 'bg-red-600 hover:bg-red-700'
                         : 'bg-gray-300 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     {resetLoading ? (
                       <>
@@ -571,11 +570,10 @@ export default function StudentsTab() {
       <div className="flex border-b border-gray-200 bg-white px-3 rounded-t-xl">
         <button
           onClick={() => setSubTab('upload')}
-          className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs sm:text-sm border-b-2 transition ${
-            subTab === 'upload'
+          className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs sm:text-sm border-b-2 transition ${subTab === 'upload'
               ? 'border-[#0F4F2C] text-[#0F4F2C]'
               : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
+            }`}
         >
           <Upload size={16} />
           <span>Upload Roster (CSV / XLSX)</span>
@@ -583,11 +581,10 @@ export default function StudentsTab() {
 
         <button
           onClick={() => setSubTab('roster')}
-          className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs sm:text-sm border-b-2 transition ${
-            subTab === 'roster'
+          className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs sm:text-sm border-b-2 transition ${subTab === 'roster'
               ? 'border-[#0F4F2C] text-[#0F4F2C]'
               : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
+            }`}
         >
           <Users size={16} />
           <span>Master Records ({totalRecords})</span>
@@ -595,11 +592,10 @@ export default function StudentsTab() {
 
         <button
           onClick={() => setSubTab('batches')}
-          className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs sm:text-sm border-b-2 transition ${
-            subTab === 'batches'
+          className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs sm:text-sm border-b-2 transition ${subTab === 'batches'
               ? 'border-[#0F4F2C] text-[#0F4F2C]'
               : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
+            }`}
         >
           <Database size={16} />
           <span>Import History ({batches.length})</span>
@@ -621,11 +617,10 @@ export default function StudentsTab() {
                 if (e.dataTransfer.files?.[0]) handleFileSelect(e.dataTransfer.files[0]);
               }}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition ${
-                dragOver
+              className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition ${dragOver
                   ? 'border-[#0F4F2C] bg-[#0F4F2C]/5 scale-[0.99]'
                   : 'border-gray-300 hover:border-[#0F4F2C] hover:bg-gray-50'
-              }`}
+                }`}
             >
               <input
                 ref={fileInputRef}
@@ -687,21 +682,19 @@ export default function StudentsTab() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => setPreviewFilter('all')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      previewFilter === 'all'
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${previewFilter === 'all'
                         ? 'bg-gray-800 text-white'
                         : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     All ({previewData.totalRows})
                   </button>
                   <button
                     onClick={() => setPreviewFilter('valid')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      previewFilter === 'valid'
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${previewFilter === 'valid'
                         ? 'bg-emerald-700 text-white'
                         : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                    }`}
+                      }`}
                   >
                     <Check size={14} />
                     Valid to Import ({previewData.validCount})
@@ -709,11 +702,10 @@ export default function StudentsTab() {
                   {previewData.invalidCount > 0 && (
                     <button
                       onClick={() => setPreviewFilter('invalid')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                        previewFilter === 'invalid'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${previewFilter === 'invalid'
                           ? 'bg-red-600 text-white'
                           : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
-                      }`}
+                        }`}
                     >
                       <AlertTriangle size={14} />
                       Errors / Duplicates ({previewData.invalidCount})
@@ -824,11 +816,10 @@ export default function StudentsTab() {
                       onCancel: () => setConfirmModal(null),
                     });
                   }}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-white transition ${
-                    previewData.validCount > 0
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-white transition ${previewData.validCount > 0
                       ? 'bg-[#0F4F2C] hover:bg-[#082F1A] shadow-md'
                       : 'bg-gray-300 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   <Check size={16} />
                   <span>Confirm & Import {previewData.validCount} Valid Records</span>
@@ -872,25 +863,22 @@ export default function StudentsTab() {
             <div className="flex items-center rounded-lg border border-gray-300 overflow-hidden bg-white text-xs">
               <button
                 onClick={() => { setStatusFilter('all'); setPage(1); }}
-                className={`px-3 py-2 font-semibold transition ${
-                  statusFilter === 'all' ? 'bg-[#0F4F2C] text-white' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-2 font-semibold transition ${statusFilter === 'all' ? 'bg-[#0F4F2C] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
               >
                 All
               </button>
               <button
                 onClick={() => { setStatusFilter('registered'); setPage(1); }}
-                className={`px-3 py-2 font-semibold transition ${
-                  statusFilter === 'registered' ? 'bg-[#0F4F2C] text-white' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-2 font-semibold transition ${statusFilter === 'registered' ? 'bg-[#0F4F2C] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
               >
                 Registered
               </button>
               <button
                 onClick={() => { setStatusFilter('unregistered'); setPage(1); }}
-                className={`px-3 py-2 font-semibold transition ${
-                  statusFilter === 'unregistered' ? 'bg-[#0F4F2C] text-white' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-2 font-semibold transition ${statusFilter === 'unregistered' ? 'bg-[#0F4F2C] text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
               >
                 Pending
               </button>

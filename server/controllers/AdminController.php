@@ -93,68 +93,12 @@ class AdminController {
 
         $ordCount  = (int)($db->query('SELECT COUNT(*) as c FROM ordinances')->fetch()['c'] ?? 0);
         $userCount = (int)($db->query("SELECT COUNT(*) as c FROM users WHERE role='user'")->fetch()['c'] ?? 0);
-        $commCount = (int)($db->query('SELECT COUNT(*) as c FROM comments')->fetch()['c'] ?? 0);
         $progCount = (int)($db->query('SELECT COUNT(*) as c FROM progress')->fetch()['c'] ?? 0);
-
-        $byType = $db->query('SELECT type, COUNT(*) as count FROM comments GROUP BY type')->fetchAll();
-
-        $recentStmt = $db->query('
-            SELECT c.*, o.title as ordinance_title
-            FROM comments c
-            LEFT JOIN ordinances o ON o.id = c.ordinance_id
-            ORDER BY c.created_at DESC
-            LIMIT 10
-        ');
-        $recent = $recentStmt->fetchAll();
-
-        $formattedRecent = array_map(function ($r) {
-            $agrees = [];
-            if (isset($r['agrees'])) {
-                if (is_string($r['agrees'])) {
-                    $decoded = json_decode($r['agrees'], true);
-                    $agrees = is_array($decoded) ? $decoded : [];
-                } elseif (is_array($r['agrees'])) {
-                    $agrees = $r['agrees'];
-                }
-            }
-            return array_merge($r, ['agrees' => $agrees]);
-        }, $recent);
 
         json_response([
             'ordinanceCount' => $ordCount,
             'userCount'      => $userCount,
-            'commentCount'   => $commCount,
             'progressCount'  => $progCount,
-            'commentsByType' => $byType,
-            'recentComments' => $formattedRecent,
         ]);
-    }
-
-    public static function getComments(): void {
-        require_admin();
-        $db = get_db();
-
-        $stmt = $db->query('
-            SELECT c.*, o.title as ordinance_title
-            FROM comments c
-            LEFT JOIN ordinances o ON o.id = c.ordinance_id
-            ORDER BY c.created_at DESC
-        ');
-        $rows = $stmt->fetchAll();
-
-        $formatted = array_map(function ($r) {
-            $agrees = [];
-            if (isset($r['agrees'])) {
-                if (is_string($r['agrees'])) {
-                    $decoded = json_decode($r['agrees'], true);
-                    $agrees = is_array($decoded) ? $decoded : [];
-                } elseif (is_array($r['agrees'])) {
-                    $agrees = $r['agrees'];
-                }
-            }
-            return array_merge($r, ['agrees' => $agrees]);
-        }, $rows);
-
-        json_response($formatted);
     }
 }

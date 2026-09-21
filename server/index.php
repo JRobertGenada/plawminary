@@ -8,7 +8,6 @@ require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/helpers/response.php';
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/OrdinanceController.php';
-require_once __DIR__ . '/controllers/CommentController.php';
 require_once __DIR__ . '/controllers/ProgressController.php';
 require_once __DIR__ . '/controllers/AdminController.php';
 
@@ -88,22 +87,6 @@ if (preg_match('#^/(?:api/)?ordinances/(\d+)$#', $path, $matches)) {
     }
 }
 
-// ─── Comments Endpoints ───────────────────────────────────────────────────────
-if ($path === '/api/comments' || $path === '/comments') {
-    if ($method === 'GET') {
-        CommentController::getByOrdinance();
-    } elseif ($method === 'POST') {
-        CommentController::create();
-    }
-}
-
-if (preg_match('#^/(?:api/)?comments/(\d+)/agree$#', $path, $matches) && $method === 'POST') {
-    CommentController::toggleAgree($matches[1]);
-}
-
-if (preg_match('#^/(?:api/)?comments/(\d+)$#', $path, $matches) && $method === 'DELETE') {
-    CommentController::delete($matches[1]);
-}
 
 // ─── Progress Endpoints ───────────────────────────────────────────────────────
 if ($path === '/api/progress' || $path === '/progress') {
@@ -135,10 +118,6 @@ if (preg_match('#^/(?:api/)?admin/users/([^/]+)$#', $path, $matches) && $method 
 
 if (($path === '/api/admin/stats' || $path === '/admin/stats') && $method === 'GET') {
     AdminController::getStats();
-}
-
-if (($path === '/api/admin/comments' || $path === '/admin/comments') && $method === 'GET') {
-    AdminController::getComments();
 }
 
 // ─── 404 Fallback ─────────────────────────────────────────────────────────────

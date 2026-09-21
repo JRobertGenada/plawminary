@@ -44,32 +44,3 @@ if (!function_exists('parse_ordinance')) {
     }
 }
 
-if (!function_exists('parse_comment')) {
-    function parse_comment(?array $row): ?array {
-        if (!$row) {
-            return null;
-        }
-
-        $agrees = [];
-        if (isset($row['agrees'])) {
-            if (is_string($row['agrees'])) {
-                $decoded = json_decode($row['agrees'], true);
-                $agrees = is_array($decoded) ? $decoded : [];
-            } elseif (is_array($row['agrees'])) {
-                $agrees = $row['agrees'];
-            }
-        }
-
-        return [
-            'id'          => (int)$row['id'],
-            'ordinanceId' => (int)$row['ordinance_id'],
-            'userId'      => $row['user_id'] ?? '',
-            'userName'    => $row['user_name'] ?? '',
-            'userDept'    => $row['user_dept'] ?? '',
-            'type'        => $row['type'] ?? 'question',
-            'body'        => $row['body'] ?? '',
-            'agrees'      => $agrees,
-            'createdAt'   => $row['created_at'] ?? '',
-        ];
-    }
-}

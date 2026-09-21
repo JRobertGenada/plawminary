@@ -6,8 +6,8 @@ import PoliciesTab   from '../components/admin/PoliciesTab';
 import HandbookTab   from '../components/admin/HandbookTab';
 import VersionsTab   from '../components/admin/VersionsTab';
 import AnalyticsTab  from '../components/admin/AnalyticsTab';
-import SuggestionsTab from '../components/admin/SuggestionsTab';
 import { Menu } from 'lucide-react';
+
 
 export default function AdminPage() {
   const [active, setActive] = useState('overview');
@@ -20,7 +20,6 @@ export default function AdminPage() {
     handbook:    <HandbookTab />,
     versions:    <VersionsTab />,
     analytics:   <AnalyticsTab />,
-    suggestions: <SuggestionsTab />,
   };
 
   const tabLabels = {
@@ -30,7 +29,6 @@ export default function AdminPage() {
     handbook: 'Handbook Ingestion',
     versions: 'Version Control',
     analytics: 'Analytics',
-    suggestions: 'Suggestions',
   };
 
   return (

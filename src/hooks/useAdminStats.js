@@ -2,8 +2,8 @@
  * useAdminStats.js — Fetches live dashboard statistics from the backend.
  * Returns: { stats, loading, error, refetch }
  *
- * Covers: ordinanceCount, userCount, commentCount, pendingCount,
- *         weeklyViews, deptStats, topSections, recentComments
+ * Covers: ordinanceCount, userCount, progressCount,
+ *         weeklyViews, deptStats, topSections
  */
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './useApi';
@@ -11,11 +11,7 @@ import { api } from './useApi';
 const EMPTY = {
   ordinanceCount:  0,
   userCount:       0,
-  commentCount:    0,
   progressCount:   0,
-  pendingCount:    0,
-  commentsByType:  [],
-  recentComments:  [],
   weeklyViews:     [],
   deptStats:       [],
   topSections:     [],

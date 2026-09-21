@@ -78,6 +78,7 @@ module.exports = (db) => {
           totalPages: result.totalPages,
           totalPolicies: result.totalPolicies,
           policies: result.policies,
+          diagnostics: result.diagnostics || null,
         });
 
       } catch (ingestErr) {

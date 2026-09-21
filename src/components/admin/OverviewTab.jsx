@@ -1,5 +1,5 @@
 import { useAdminStats } from '../../hooks/useAdminStats';
-import { ClipboardList, Eye, GraduationCap, MessageSquare, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
+import { ClipboardList, Eye, GraduationCap, BookOpen, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 
 function StatCard({ icon, label, value, sub, accent, loading }) {
   return (
@@ -21,7 +21,7 @@ function StatCard({ icon, label, value, sub, accent, loading }) {
 export default function OverviewTab({ setActive }) {
   const { stats, loading, error, refetch } = useAdminStats();
 
-  const { ordinanceCount, userCount, pendingCount, weeklyViews, deptStats, topSections } = stats;
+  const { ordinanceCount, userCount, progressCount, weeklyViews, deptStats, topSections } = stats;
   const maxBar = weeklyViews.length > 0 ? Math.max(...weeklyViews.map(w => w.views), 1) : 1;
   const maxTopView = topSections.length > 0 ? topSections[0].views : 1;
 
@@ -54,7 +54,7 @@ export default function OverviewTab({ setActive }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <StatCard loading={loading} icon={<ClipboardList size={22} />} label="Published Policies"  value={ordinanceCount}                    sub="Active in database"    accent="#1F6F3D" />
         <StatCard loading={loading} icon={<GraduationCap size={22} />} label="Enrolled Students"   value={userCount.toLocaleString()}         sub="Verified student accounts" accent="#D4A82A" />
-        <StatCard loading={loading} icon={<MessageSquare size={22} />} label="Pending Suggestions" value={pendingCount}                        sub="Awaiting admin review" accent="#9D174D" />
+        <StatCard loading={loading} icon={<BookOpen size={22} />}      label="Readings Completed" value={progressCount}                       sub="Progress records tracked"  accent="#9D174D" />
         <StatCard loading={loading} icon={<Eye size={22} />}           label="Total Views"          value={weeklyViews.reduce((a, w) => a + (w.views || 0), 0).toLocaleString()} sub="Last 5 weeks" accent="#1D4ED8" />
       </div>
 

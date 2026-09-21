@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Lightbulb, ScrollText, ClipboardList, Info, Printer, Link2,
-  ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, Sparkles,
+  ChevronLeft, ChevronRight, CheckCircle2, Sparkles,
   AlertCircle, RotateCcw, BookOpen, ArrowRight, Bookmark, BookmarkCheck,
   Download, Trash2, WifiOff, Loader2
 } from 'lucide-react';
 import { BADGE_MAP } from '../data/ordinances';
 import { api } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
-import CommentsPanel from '../components/CommentsPanel';
 import ConfirmationModal from '../components/ConfirmationModal';
 import {
   saveOrdinanceOffline,
@@ -311,7 +310,7 @@ export default function OrdinanceDetailPage() {
             setLoading(false);
             return;
           }
-        } catch (_) {}
+        } catch (_) { }
 
         if (err.status === 404) setNotFound(true);
         else console.error('[OrdinanceDetailPage] API error:', err);
@@ -338,7 +337,7 @@ export default function OrdinanceDetailPage() {
       let activeVer = null;
       try {
         activeVer = await api.get('/handbook/active-version');
-      } catch (_) {}
+      } catch (_) { }
       await saveOrdinanceOffline(ord, activeVer, user?.id);
       setIsSaved(true);
       setModalMessage(`"${ord.title}" has been saved to your browser's offline storage. You can now access and read it anytime without an internet connection.`);
@@ -532,133 +531,117 @@ export default function OrdinanceDetailPage() {
           <AiExplanationPanel key={ord.id} ord={ord} />
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 sm:gap-8 items-start">
 
-          {/* Main content */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Sidebar */}
+        <div className="flex flex-col gap-5">
 
-
-            {/* Comments / Discussion */}
-            <div className="p-5 sm:p-8" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <div style={{ color: 'var(--gold-d)' }}><MessageSquare size={22} /></div>
-                <h2 style={{ fontFamily: '"DM Serif Display",serif', fontSize: '1.2rem', color: 'var(--g-dark)', margin: 0 }}>Student Discussion</h2>
+          {/* Quick info */}
+          <div className="p-5" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
+            <div style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-t)', marginBottom: 16 }}>Information Card</div>
+            {[
+              ['Reference', ord.ref],
+              ['Category', ord.cat],
+              ['Version', '2025 Revised'],
+            ].map(([label, val]) => (
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--gray-bg)' }}>
+                <span style={{ fontSize: '.84rem', color: 'var(--gray-t)', fontWeight: 500 }}>{label}</span>
+                <span style={{ fontSize: '.84rem', fontWeight: 700, color: 'var(--g-dark)' }}>{val}</span>
               </div>
-              <CommentsPanel sectionId={`ord-${ord.id}`} sectionTitle={ord.title} />
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10 }}>
+              <span style={{ fontSize: '.84rem', color: 'var(--gray-t)', fontWeight: 500 }}>Status</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 999, fontSize: '.72rem', fontWeight: 800, background: '#D1FAE5', color: '#065F46' }}>
+                <CheckCircle2 size={12} /> Active
+              </span>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="flex flex-col gap-5 lg:sticky lg:top-24">
-
-            {/* Quick info */}
-            <div className="p-5" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
-              <div style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-t)', marginBottom: 16 }}>Information Card</div>
-              {[
-                ['Reference', ord.ref],
-                ['Category', ord.cat],
-                ['Version', '2025 Revised'],
-              ].map(([label, val]) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--gray-bg)' }}>
-                  <span style={{ fontSize: '.84rem', color: 'var(--gray-t)', fontWeight: 500 }}>{label}</span>
-                  <span style={{ fontSize: '.84rem', fontWeight: 700, color: 'var(--g-dark)' }}>{val}</span>
-                </div>
-              ))}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10 }}>
-                <span style={{ fontSize: '.84rem', color: 'var(--gray-t)', fontWeight: 500 }}>Status</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 999, fontSize: '.72rem', fontWeight: 800, background: '#D1FAE5', color: '#065F46' }}>
-                  <CheckCircle2 size={12} /> Active
-                </span>
-              </div>
-            </div>
-
-            {/* Quick actions */}
-            <div className="p-5" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
-              <div style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-t)', marginBottom: 14 }}>Resources & Actions</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {/* Offline action button */}
-                {isSaved ? (
-                  <button
-                    onClick={() => setRemoveModalOpen(true)}
-                    style={{
-                      width: '100%', padding: '11px 14px', borderRadius: 10,
-                      border: '1.5px solid rgba(244,197,66,0.45)',
-                      background: 'rgba(244,197,66,0.1)',
-                      color: 'var(--g-dark)', fontSize: '.84rem', fontWeight: 700,
-                      cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      transition: 'all .2s'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <BookmarkCheck size={16} color="var(--g-primary)" />
-                      <span>Saved in Offline Library</span>
-                    </div>
-                    <span style={{ fontSize: '.72rem', color: '#DC2626', fontWeight: 700 }}>Remove</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSaveOffline}
-                    disabled={saving}
-                    style={{
-                      width: '100%', padding: '11px 14px', borderRadius: 10,
-                      border: '1px solid var(--gray-mid)',
-                      background: 'var(--g-pale)',
-                      color: 'var(--g-dark)', fontSize: '.84rem', fontWeight: 700,
-                      cursor: saving ? 'wait' : 'pointer',
-                      fontFamily: '"Plus Jakarta Sans",sans-serif',
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      transition: 'all .2s'
-                    }}
-                    onMouseEnter={e => !saving && (e.currentTarget.style.background = '#d1f4e0')}
-                    onMouseLeave={e => !saving && (e.currentTarget.style.background = 'var(--g-pale)')}
-                  >
-                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} color="var(--g-primary)" />}
-                    <span>{saving ? 'Saving to Offline Storage...' : 'Save Policy for Offline Use'}</span>
-                  </button>
-                )}
-
-                <button onClick={() => window.print()} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--gray-mid)', background: 'transparent', color: 'var(--gray-dk)', fontSize: '.84rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--gray-bg)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          {/* Quick actions */}
+          <div className="p-5" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
+            <div style={{ fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-t)', marginBottom: 14 }}>Resources & Actions</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Offline action button */}
+              {isSaved ? (
+                <button
+                  onClick={() => setRemoveModalOpen(true)}
+                  style={{
+                    width: '100%', padding: '11px 14px', borderRadius: 10,
+                    border: '1.5px solid rgba(244,197,66,0.45)',
+                    background: 'rgba(244,197,66,0.1)',
+                    color: 'var(--g-dark)', fontSize: '.84rem', fontWeight: 700,
+                    cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    transition: 'all .2s'
+                  }}
                 >
-                  <Printer size={16} /> Print Policy Document
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <BookmarkCheck size={16} color="var(--g-primary)" />
+                    <span>Saved in Offline Library</span>
+                  </div>
+                  <span style={{ fontSize: '.72rem', color: '#DC2626', fontWeight: 700 }}>Remove</span>
                 </button>
-                <button onClick={handleCopy} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--gray-mid)', background: copied ? 'var(--g-pale)' : 'transparent', color: copied ? 'var(--g-primary)' : 'var(--gray-dk)', fontSize: '.84rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
-                  onMouseEnter={e => !copied && (e.currentTarget.style.background = 'var(--gray-bg)')}
-                  onMouseLeave={e => !copied && (e.currentTarget.style.background = 'transparent')}
+              ) : (
+                <button
+                  onClick={handleSaveOffline}
+                  disabled={saving}
+                  style={{
+                    width: '100%', padding: '11px 14px', borderRadius: 10,
+                    border: '1px solid var(--gray-mid)',
+                    background: 'var(--g-pale)',
+                    color: 'var(--g-dark)', fontSize: '.84rem', fontWeight: 700,
+                    cursor: saving ? 'wait' : 'pointer',
+                    fontFamily: '"Plus Jakarta Sans",sans-serif',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    transition: 'all .2s'
+                  }}
+                  onMouseEnter={e => !saving && (e.currentTarget.style.background = '#d1f4e0')}
+                  onMouseLeave={e => !saving && (e.currentTarget.style.background = 'var(--g-pale)')}
                 >
-                  <Link2 size={16} /> {copied ? 'Link Copied to Clipboard!' : 'Copy Official Link'}
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} color="var(--g-primary)" />}
+                  <span>{saving ? 'Saving to Offline Storage...' : 'Save Policy for Offline Use'}</span>
                 </button>
-              </div>
-            </div>
+              )}
 
-            {/* Related ordinances */}
-            {related.length > 0 && (
-              <div className="p-5" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-t)', marginBottom: 16 }}>
-                  <Link2 size={14} /> Related Policies
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {related.map(r => {
-                    const s = BADGE_MAP[r.catK] || { bg: '#F3F4F6', color: '#374151' };
-                    return (
-                      <Link key={r.id} to={`/ordinances/${r.id}`} style={{ textDecoration: 'none', display: 'block', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--gray-mid)', background: 'var(--gray-bg)', transition: 'all .2s' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--g-primary)'; e.currentTarget.style.background = '#fff'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--gray-mid)'; e.currentTarget.style.background = 'var(--gray-bg)'; }}
-                      >
-                        <div style={{ fontSize: '.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: 999, background: s.bg, color: s.color, display: 'inline-block', marginBottom: 6, letterSpacing: '.05em' }}>{r.cat}</div>
-                        <div style={{ fontSize: '.86rem', fontWeight: 700, color: 'var(--g-dark)', lineHeight: 1.35 }}>{r.title}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem', color: 'var(--gray-t)', marginTop: 6, fontWeight: 600 }}>
-                          {r.ref} <ChevronRight size={12} />
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+              <button onClick={() => window.print()} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--gray-mid)', background: 'transparent', color: 'var(--gray-dk)', fontSize: '.84rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--gray-bg)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <Printer size={16} /> Print Policy Document
+              </button>
+              <button onClick={handleCopy} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--gray-mid)', background: copied ? 'var(--g-pale)' : 'transparent', color: copied ? 'var(--g-primary)' : 'var(--gray-dk)', fontSize: '.84rem', fontWeight: 700, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans",sans-serif', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, transition: 'all .2s' }}
+                onMouseEnter={e => !copied && (e.currentTarget.style.background = 'var(--gray-bg)')}
+                onMouseLeave={e => !copied && (e.currentTarget.style.background = 'transparent')}
+              >
+                <Link2 size={16} /> {copied ? 'Link Copied to Clipboard!' : 'Copy Official Link'}
+              </button>
+            </div>
           </div>
+
+          {/* Related ordinances */}
+          {related.length > 0 && (
+            <div className="p-5" style={{ background: '#fff', border: '1px solid var(--gray-mid)', borderRadius: 20, boxShadow: '0 4px 12px rgba(0,0,0,.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-t)', marginBottom: 16 }}>
+                <Link2 size={14} /> Related Policies
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {related.map(r => {
+                  const s = BADGE_MAP[r.catK] || { bg: '#F3F4F6', color: '#374151' };
+                  return (
+                    <Link key={r.id} to={`/ordinances/${r.id}`} style={{ textDecoration: 'none', display: 'block', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--gray-mid)', background: 'var(--gray-bg)', transition: 'all .2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--g-primary)'; e.currentTarget.style.background = '#fff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--gray-mid)'; e.currentTarget.style.background = 'var(--gray-bg)'; }}
+                    >
+                      <div style={{ fontSize: '.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: 999, background: s.bg, color: s.color, display: 'inline-block', marginBottom: 6, letterSpacing: '.05em' }}>{r.cat}</div>
+                      <div style={{ fontSize: '.86rem', fontWeight: 700, color: 'var(--g-dark)', lineHeight: 1.35 }}>{r.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '.72rem', color: 'var(--gray-t)', marginTop: 6, fontWeight: 600 }}>
+                        {r.ref} <ChevronRight size={12} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

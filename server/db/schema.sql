@@ -33,21 +33,7 @@ CREATE TABLE IF NOT EXISTS ordinances (
   updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS comments (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  ordinance_id INT NOT NULL,
-  user_id      VARCHAR(64) NOT NULL,
-  user_name    VARCHAR(255) NOT NULL,
-  user_dept    VARCHAR(255) NOT NULL,
-  type         VARCHAR(32) NOT NULL DEFAULT 'question',
-  body         TEXT NOT NULL,
-  agrees       JSON NULL,
-  resolved     TINYINT(1) NOT NULL DEFAULT 0,
-  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_comments_ord (ordinance_id),
-  CONSTRAINT fk_comments_ord FOREIGN KEY (ordinance_id) REFERENCES ordinances(id) ON DELETE CASCADE,
-  CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 CREATE TABLE IF NOT EXISTS progress (
   user_id     VARCHAR(64) NOT NULL,

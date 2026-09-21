@@ -1,5 +1,4 @@
 import { CheckCircle, Circle, BookMarked } from 'lucide-react';
-import CommentsPanel from './CommentsPanel';
 
 const BADGE_COLORS = {
   'Fundamental Right': { bg: '#DBEAFE', color: '#1D4ED8' },
@@ -81,8 +80,6 @@ export default function PolicyReader({ chapter, section, isRead, onMarkRead }) {
           </button>
         </div>
 
-        {/* Comments */}
-        <CommentsPanel sectionId={section.id} sectionTitle={section.title} />
       </div>
     </article>
   );

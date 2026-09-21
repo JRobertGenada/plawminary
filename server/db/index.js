@@ -93,15 +93,6 @@ async function initDb() {
         `,
       },
       {
-        table: 'comments',
-        column: 'resolved',
-        sql: `
-          ALTER TABLE comments
-          ADD COLUMN resolved TINYINT(1)
-          NOT NULL DEFAULT 0
-        `,
-      },
-      {
         table: 'ordinances',
         column: 'page',
         sql: `
