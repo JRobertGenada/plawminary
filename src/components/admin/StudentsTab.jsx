@@ -1128,8 +1128,8 @@ export default function StudentsTab() {
           </div>
 
           {/* Roster Table */}
-          <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <table className="w-full text-left text-xs">
+          <div className="border border-gray-200 rounded-xl overflow-x-auto shadow-sm">
+            <table className="w-full min-w-[980px] text-left text-xs">
               <thead className="bg-gray-50 text-gray-600 font-bold uppercase tracking-wider text-[11px] border-b border-gray-200">
                 <tr>
                   <th className="py-3 px-4">Student Number</th>
@@ -1181,23 +1181,29 @@ export default function StudentsTab() {
                           </span>
                         )}
                       </td>
-                      {/* Lifecycle status badge */}
+                      {/* Lifecycle status badge (clickable to change status directly) */}
                       <td className="py-3 px-4">
                         {(() => {
                           const s = rec.status || 'active';
                           const cfg = {
-                            active:    { cls: 'bg-green-50 text-green-700 border-green-200',   label: 'Active' },
-                            inactive:  { cls: 'bg-gray-100 text-gray-600 border-gray-300',      label: 'Inactive' },
-                            suspended: { cls: 'bg-orange-50 text-orange-700 border-orange-200', label: 'Suspended' },
-                            archived:  { cls: 'bg-gray-200 text-gray-500 border-gray-300',      label: 'Archived' },
-                          }[s] || { cls: 'bg-gray-100 text-gray-500 border-gray-200', label: s };
+                            active:    { cls: 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300',   label: 'Active' },
+                            inactive:  { cls: 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 hover:border-gray-400',      label: 'Inactive' },
+                            suspended: { cls: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 hover:border-orange-300', label: 'Suspended' },
+                            archived:  { cls: 'bg-gray-200 text-gray-500 border-gray-300 hover:bg-gray-300',                             label: 'Archived' },
+                          }[s] || { cls: 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200', label: s };
                           return (
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${cfg.cls}`}
-                              title={rec.status_reason ? `Reason: ${rec.status_reason}` : undefined}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenStatusModal(rec);
+                              }}
+                              className={`group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition cursor-pointer shadow-2xs hover:shadow-xs ${cfg.cls}`}
+                              title={`Click to change status${rec.status_reason ? ` • Current reason: ${rec.status_reason}` : ''}`}
                             >
-                              {cfg.label}
-                            </span>
+                              <span>{cfg.label}</span>
+                              <ShieldCheck size={11} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+                            </button>
                           );
                         })()}
                       </td>
@@ -1297,8 +1303,8 @@ export default function StudentsTab() {
             />
           </div>
 
-          <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <table className="w-full text-left text-xs">
+          <div className="border border-gray-200 rounded-xl overflow-x-auto shadow-sm">
+            <table className="w-full min-w-[850px] text-left text-xs">
               <thead className="bg-gray-50 text-gray-600 font-bold uppercase tracking-wider text-[11px] border-b border-gray-200">
                 <tr>
                   <th className="py-3 px-4">Student Number</th>
