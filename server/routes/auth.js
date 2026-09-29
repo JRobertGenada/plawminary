@@ -70,6 +70,23 @@ module.exports = (db) => {
 
       const masterRecord = matchedRecords[0];
 
+      // ── 5b. Reject students whose master-list record is not in a registerable state ──
+      if (masterRecord.status === 'archived') {
+        return res.status(403).json({
+          error: 'Your student record has been archived and is no longer eligible for registration. Please contact your college administrator.',
+        });
+      }
+      if (masterRecord.status === 'suspended') {
+        return res.status(403).json({
+          error: 'Your student record has been suspended. Please contact your college administrator before registering.',
+        });
+      }
+      if (masterRecord.status === 'inactive') {
+        return res.status(403).json({
+          error: 'Your student record is currently inactive. Please contact your college administrator to confirm your eligibility.',
+        });
+      }
+
       // ── 6. Reject students who already have an account ────────────────────
       if (masterRecord.is_registered === 1) {
         return res.status(409).json({
@@ -158,6 +175,38 @@ module.exports = (db) => {
       const user = rows[0];
       if (!user) {
         return res.status(401).json({ error: 'Invalid Student ID or password. Please try again.' });
+      }
+
+      // ── Check if the student's master-list record blocks login ──────────────
+      if (user.role === 'user' || user.role === 'student') {
+        // Prefer the linked student_record_id; fall back to matching by student_no
+        let srQuery, srParams;
+        if (user.student_record_id) {
+          srQuery = 'SELECT status FROM student_records WHERE id = ?';
+          srParams = [user.student_record_id];
+        } else {
+          srQuery = 'SELECT status FROM student_records WHERE LOWER(TRIM(student_no)) = LOWER(TRIM(?))';
+          srParams = [user.id];
+        }
+        const [srRows] = await db.query(srQuery, srParams);
+        const sr = srRows[0];
+        if (sr) {
+          if (sr.status === 'archived') {
+            return res.status(403).json({
+              error: 'Your account has been archived and cannot be used to log in. Please contact your college administrator.',
+            });
+          }
+          if (sr.status === 'suspended') {
+            return res.status(403).json({
+              error: 'Your account has been suspended. Please contact your college administrator for assistance.',
+            });
+          }
+          if (sr.status === 'inactive') {
+            return res.status(403).json({
+              error: 'Your student record is currently inactive. Please contact your college administrator.',
+            });
+          }
+        }
       }
 
       const hash = user.password_hash.startsWith('$2y$')

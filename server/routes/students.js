@@ -404,7 +404,15 @@ module.exports = (db) => {
   // ── GET /api/admin/students — List Master Records ──────────────────────────
   router.get('/', async (req, res, next) => {
     try {
-      const { search = '', status = 'all', department = '', page = 1, limit = 50 } = req.query;
+      const {
+        search = '',
+        status = 'all',
+        department = '',
+        page = 1,
+        limit = 50,
+        studentStatus = '',    // lifecycle status filter: 'active'|'inactive'|'suspended'|'archived'
+        includeArchived = '0', // '1' to show archived records in the list
+      } = req.query;
 
       const p = Math.max(1, parseInt(page, 10) || 1);
       const l = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
@@ -412,6 +420,17 @@ module.exports = (db) => {
 
       const whereClauses = [];
       const params = [];
+
+      // By default, hide archived records unless explicitly requested
+      if (studentStatus === 'archived') {
+        whereClauses.push("sr.status = 'archived'");
+      } else if (studentStatus && ['active', 'inactive', 'suspended'].includes(studentStatus)) {
+        whereClauses.push('sr.status = ?');
+        params.push(studentStatus);
+      } else if (includeArchived !== '1') {
+        // Default: exclude archived
+        whereClauses.push("sr.status != 'archived'");
+      }
 
       if (status === 'registered') {
         whereClauses.push('sr.is_registered = 1');
@@ -438,10 +457,11 @@ module.exports = (db) => {
         params
       );
 
-      // KPI counts
-      const [[{ totalRecords }]]    = await db.query('SELECT COUNT(*) as totalRecords FROM student_records');
-      const [[{ registeredCount }]] = await db.query('SELECT COUNT(*) as registeredCount FROM student_records WHERE is_registered = 1');
-      const [[{ pendingCount }]]    = await db.query('SELECT COUNT(*) as pendingCount FROM student_records WHERE is_registered = 0');
+      // KPI counts (exclude archived from totals to reflect active roster)
+      const [[{ totalRecords }]]    = await db.query("SELECT COUNT(*) as totalRecords FROM student_records WHERE status != 'archived'");
+      const [[{ registeredCount }]] = await db.query("SELECT COUNT(*) as registeredCount FROM student_records WHERE is_registered = 1 AND status != 'archived'");
+      const [[{ pendingCount }]]    = await db.query("SELECT COUNT(*) as pendingCount FROM student_records WHERE is_registered = 0 AND status != 'archived'");
+      const [[{ archivedCount }]]   = await db.query("SELECT COUNT(*) as archivedCount FROM student_records WHERE status = 'archived'");
       const [[{ batchCount }]]      = await db.query('SELECT COUNT(*) as batchCount FROM import_batches');
 
       // Fetch records with batch info
@@ -469,6 +489,7 @@ module.exports = (db) => {
           totalRecords,
           registeredCount,
           pendingCount,
+          archivedCount,
           batchCount,
         },
         departments: departments.map(d => d.department),
@@ -497,27 +518,136 @@ module.exports = (db) => {
     }
   });
 
-  // ── DELETE /api/admin/students/:id — Delete a Student Record ───────────────
-  router.delete('/:id', async (req, res, next) => {
+  // ── PATCH /api/admin/students/:id/status — Change Student Lifecycle Status ──
+  router.patch('/:id/status', async (req, res, next) => {
     try {
+      const { status, reason } = req.body;
+      // 'archived' is intentionally excluded — use PATCH /:id/archive instead
+      const ALLOWED_STATUSES = ['active', 'inactive', 'suspended'];
+
+      if (!status || !ALLOWED_STATUSES.includes(status)) {
+        return res.status(400).json({
+          error: `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(', ')}. To archive a student, use the Archive action.`,
+        });
+      }
+
+      if (!reason || typeof reason !== 'string' || reason.trim().length < 3) {
+        return res.status(400).json({
+          error: 'A reason of at least 3 characters is required for status changes.',
+        });
+      }
+
       const [rows] = await db.query('SELECT * FROM student_records WHERE id = ?', [req.params.id]);
       if (rows.length === 0) {
         return res.status(404).json({ error: 'Student record not found.' });
       }
-      const record = rows[0];
 
-      // Check if user account is attached
-      if (record.is_registered) {
-        return res.status(400).json({
-          error: 'Cannot delete record: Student has already registered a user account. Remove the user account in Users management first if necessary.',
-        });
-      }
+      const actorId = req.user?.id || req.session?.user?.id || 'admin';
 
-      await db.query('DELETE FROM student_records WHERE id = ?', [req.params.id]);
-      res.json({ success: true, message: 'Student record deleted successfully.' });
+      await db.query(
+        `UPDATE student_records
+         SET status = ?, status_reason = ?, status_changed_at = CURRENT_TIMESTAMP, status_changed_by = ?
+         WHERE id = ?`,
+        [status, reason.trim(), actorId, req.params.id]
+      );
+
+      res.json({
+        success: true,
+        message: `Student status updated to "${status}" successfully.`,
+        status,
+        reason: reason.trim(),
+        changedBy: actorId,
+      });
     } catch (err) {
       next(err);
     }
+  });
+
+  // ── PATCH /api/admin/students/:id/archive — Archive or Restore a Student ──
+  router.patch('/:id/archive', async (req, res, next) => {
+    try {
+      const { reason, unarchive = false, restoreStatus } = req.body;
+
+      if (!reason || typeof reason !== 'string' || reason.trim().length < 3) {
+        return res.status(400).json({
+          error: 'A reason of at least 3 characters is required to archive or restore a student.',
+        });
+      }
+
+      const [rows] = await db.query('SELECT * FROM student_records WHERE id = ?', [req.params.id]);
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'Student record not found.' });
+      }
+
+      const record = rows[0];
+      const actorId = req.user?.id || req.session?.user?.id || 'admin';
+
+      if (!unarchive) {
+        // ── ARCHIVE: Block all active students regardless of registration state ──
+        // Admin must first change the student's status to inactive or suspended.
+        if (record.status === 'active') {
+          return res.status(400).json({
+            error: 'Cannot archive an active student. Change their status to "inactive" or "suspended" first.',
+          });
+        }
+        if (record.status === 'archived') {
+          return res.status(400).json({ error: 'Student record is already archived.' });
+        }
+
+        await db.query(
+          `UPDATE student_records
+           SET status = 'archived', status_reason = ?, status_changed_at = CURRENT_TIMESTAMP, status_changed_by = ?
+           WHERE id = ?`,
+          [reason.trim(), actorId, record.id]
+        );
+
+        res.json({
+          success: true,
+          message: 'Student record archived successfully.',
+          status: 'archived',
+          reason: reason.trim(),
+          changedBy: actorId,
+        });
+      } else {
+        // ── RESTORE: Admin must explicitly choose the target status ──
+        if (record.status !== 'archived') {
+          return res.status(400).json({ error: 'Student record is not archived.' });
+        }
+
+        const ALLOWED_RESTORE = ['active', 'inactive', 'suspended'];
+        if (!restoreStatus || !ALLOWED_RESTORE.includes(restoreStatus)) {
+          return res.status(400).json({
+            error: `A valid restoreStatus is required when restoring a student. Allowed values: ${ALLOWED_RESTORE.join(', ')}.`,
+          });
+        }
+
+        await db.query(
+          `UPDATE student_records
+           SET status = ?, status_reason = ?, status_changed_at = CURRENT_TIMESTAMP, status_changed_by = ?
+           WHERE id = ?`,
+          [restoreStatus, reason.trim(), actorId, record.id]
+        );
+
+        res.json({
+          success: true,
+          message: `Student record restored to "${restoreStatus}" successfully.`,
+          status: restoreStatus,
+          reason: reason.trim(),
+          changedBy: actorId,
+        });
+      }
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── DELETE /api/admin/students/:id — DISABLED (archive-first design) ─────────
+  // Physical deletion of student records is not permitted.
+  // Use PATCH /:id/archive to archive a student instead.
+  router.delete('/:id', (req, res) => {
+    res.status(403).json({
+      error: 'Physical deletion of student records is not permitted. Use the Archive action to remove a student from the active roster.',
+    });
   });
 
   return router;

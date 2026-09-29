@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   RefreshCw,
   Search,
-  Trash2,
   FileDown,
   GraduationCap,
   Users,
@@ -21,10 +20,15 @@ import {
   ChevronRight,
   RotateCcw,
   ShieldAlert,
+  Archive,
+  ShieldOff,
+  ShieldCheck,
+  MoreHorizontal,
+  Undo2,
 } from 'lucide-react';
 
 export default function StudentsTab() {
-  const [subTab, setSubTab] = useState('upload'); // 'upload' | 'roster' | 'batches'
+  const [subTab, setSubTab] = useState('upload'); // 'upload' | 'roster' | 'archived' | 'batches'
 
   // Data state
   const [loading, setLoading] = useState(false);
@@ -34,6 +38,7 @@ export default function StudentsTab() {
     totalRecords: 0,
     registeredCount: 0,
     pendingCount: 0,
+    archivedCount: 0,
     batchCount: 0,
   });
   const [batches, setBatches] = useState([]);
@@ -42,6 +47,7 @@ export default function StudentsTab() {
   // Search & Filter state for Roster
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'registered' | 'unregistered'
+  const [studentStatusFilter, setStudentStatusFilter] = useState(''); // '' | 'active' | 'inactive' | 'suspended'
   const [deptFilter, setDeptFilter] = useState('');
   const [page, setPage] = useState(1);
   const limit = 25;
@@ -67,16 +73,30 @@ export default function StudentsTab() {
   const [resetError, setResetError] = useState('');
   const [resetResult, setResetResult] = useState(null);
 
+  // Status Change / Archive Modal State
+  const [statusModal, setStatusModal] = useState(null); // { rec, mode: 'status'|'archive'|'unarchive' }
+  const [statusModalReason, setStatusModalReason] = useState('');
+  const [statusModalValue, setStatusModalValue] = useState('active');
+  const [statusModalRestoreStatus, setStatusModalRestoreStatus] = useState('active'); // for unarchive
+  const [statusModalLoading, setStatusModalLoading] = useState(false);
+  const [statusModalError, setStatusModalError] = useState('');
+
+  // Row action dropdown
+  const [openActionMenu, setOpenActionMenu] = useState(null); // rec.id
+
   // ── Fetch Master Records ──────────────────────────────────────────────────
   const fetchRoster = useCallback(async () => {
     setLoading(true);
     try {
+      const isArchivedTab = subTab === 'archived';
       const q = new URLSearchParams({
         search,
         status: statusFilter,
         department: deptFilter,
         page: String(page),
         limit: String(limit),
+        studentStatus: isArchivedTab ? 'archived' : studentStatusFilter,
+        includeArchived: isArchivedTab ? '1' : '0',
       });
       const data = await api.get(`/admin/students?${q.toString()}`);
       setRecords(data.records || []);
@@ -88,7 +108,7 @@ export default function StudentsTab() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, deptFilter, page]);
+  }, [search, statusFilter, studentStatusFilter, deptFilter, page, subTab]);
 
   // ── Fetch Batch History ───────────────────────────────────────────────────
   async function fetchBatches() {
@@ -187,30 +207,82 @@ export default function StudentsTab() {
     }
   }
 
-  // ── Delete Record ─────────────────────────────────────────────────────────
-  async function handleDeleteRecord(rec) {
-    if (rec.is_registered) {
-      alert('Cannot delete this record because the student has already registered an account.');
+  // ── Open Status Change Modal ──────────────────────────────────────────────
+  function handleOpenStatusModal(rec) {
+    setOpenActionMenu(null);
+    setStatusModal({ rec, mode: 'status' });
+    setStatusModalValue(rec.status || 'active');
+    setStatusModalReason('');
+    setStatusModalError('');
+  }
+
+  // ── Open Archive Modal ────────────────────────────────────────────────────
+  function handleOpenArchiveModal(rec) {
+    setOpenActionMenu(null);
+    setStatusModal({ rec, mode: 'archive' });
+    setStatusModalReason('');
+    setStatusModalError('');
+  }
+
+  // ── Open Unarchive Modal ──────────────────────────────────────────────────
+  function handleOpenUnarchiveModal(rec) {
+    setOpenActionMenu(null);
+    setStatusModal({ rec, mode: 'unarchive' });
+    setStatusModalReason('');
+    setStatusModalRestoreStatus('active');
+    setStatusModalError('');
+  }
+
+  // ── Submit Status / Archive Modal ─────────────────────────────────────────
+  async function handleStatusModalSubmit() {
+    if (!statusModal) return;
+    if (!statusModalReason.trim() || statusModalReason.trim().length < 3) {
+      setStatusModalError('Please enter a reason of at least 3 characters.');
       return;
     }
-
-    setConfirmModal({
-      isOpen: true,
-      type: 'danger',
-      title: 'Remove Student Record?',
-      message: `Are you sure you want to remove student "${rec.student_no}" (${rec.email}) from the authorized master list? This student will no longer be able to register.`,
-      confirmText: 'Delete Record',
-      onConfirm: async () => {
-        try {
-          await api.delete(`/admin/students/${rec.id}`);
-          setConfirmModal(null);
-          fetchRoster();
-        } catch (err) {
-          alert(err.message || 'Failed to delete record');
+    setStatusModalLoading(true);
+    setStatusModalError('');
+    try {
+      const { rec, mode } = statusModal;
+      if (mode === 'status') {
+        await api.patch(`/admin/students/${rec.id}/status`, {
+          status: statusModalValue,
+          reason: statusModalReason.trim(),
+        });
+      } else if (mode === 'unarchive') {
+        if (!statusModalRestoreStatus) {
+          setStatusModalError('Please select the status to restore this student to.');
+          setStatusModalLoading(false);
+          return;
         }
-      },
-      onCancel: () => setConfirmModal(null),
-    });
+        await api.patch(`/admin/students/${rec.id}/archive`, {
+          reason: statusModalReason.trim(),
+          unarchive: true,
+          restoreStatus: statusModalRestoreStatus,
+        });
+      } else {
+        // mode === 'archive'
+        await api.patch(`/admin/students/${rec.id}/archive`, {
+          reason: statusModalReason.trim(),
+          unarchive: false,
+        });
+      }
+      setStatusModal(null);
+      fetchRoster();
+      fetchBatches();
+    } catch (err) {
+      setStatusModalError(err.message || 'Action failed. Please try again.');
+    } finally {
+      setStatusModalLoading(false);
+    }
+  }
+
+  function handleCloseStatusModal() {
+    if (statusModalLoading) return;
+    setStatusModal(null);
+    setStatusModalReason('');
+    setStatusModalRestoreStatus('active');
+    setStatusModalError('');
   }
 
   // Download sample template
@@ -262,13 +334,147 @@ export default function StudentsTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onClick={() => setOpenActionMenu(null)}>
       {/* ── Confirmation Modal ── */}
       {confirmModal && (
         <ConfirmationModal
           {...confirmModal}
           loading={actionLoading}
         />
+      )}
+
+      {/* ── Status / Archive Modal ── */}
+      {statusModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget && !statusModalLoading) handleCloseStatusModal(); }}
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 relative border border-gray-200">
+            {!statusModalLoading && (
+              <button onClick={handleCloseStatusModal} className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-700 rounded-lg transition" aria-label="Close">
+                <X size={18} />
+              </button>
+            )}
+
+            {/* Modal Header */}
+            <div className="flex items-center gap-3">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                statusModal.mode === 'archive' ? 'bg-amber-50 text-amber-600'
+                : statusModal.mode === 'unarchive' ? 'bg-emerald-50 text-emerald-600'
+                : 'bg-blue-50 text-blue-600'
+              }`}>
+                {statusModal.mode === 'archive' ? <Archive size={22} />
+                : statusModal.mode === 'unarchive' ? <Undo2 size={22} />
+                : <ShieldCheck size={22} />}
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-base">
+                  {statusModal.mode === 'archive' ? 'Archive Student Record'
+                  : statusModal.mode === 'unarchive' ? 'Restore from Archive'
+                  : 'Change Student Status'}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">{statusModal.rec.student_no} — {statusModal.rec.full_name || statusModal.rec.email}</p>
+              </div>
+            </div>
+
+            {/* Status Selector (only in 'status' mode) */}
+            {statusModal.mode === 'status' && (
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-700">New Status</label>
+                <select
+                  value={statusModalValue}
+                  onChange={(e) => setStatusModalValue(e.target.value)}
+                  disabled={statusModalLoading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  To archive this student, use the <strong>Archive Student</strong> action instead.
+                </p>
+              </div>
+            )}
+
+            {/* Restore Status Selector (only in 'unarchive' mode) */}
+            {statusModal.mode === 'unarchive' && (
+              <div className="space-y-2">
+                <div className="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-xl text-xs text-amber-900 leading-relaxed">
+                  Select the status to restore this student to. <strong>Do not restore to Active</strong> if the student
+                  was previously suspended or disciplinary holds still apply.
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-700">
+                    Restore To Status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={statusModalRestoreStatus}
+                    onChange={(e) => setStatusModalRestoreStatus(e.target.value)}
+                    disabled={statusModalLoading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-medium outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 bg-white"
+                  >
+                    <option value="active">Active — Full access restored</option>
+                    <option value="inactive">Inactive — Record visible but login blocked</option>
+                    <option value="suspended">Suspended — Record visible but login blocked</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Warning text for archive mode */}
+            {statusModal.mode === 'archive' && (
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-xl text-xs text-amber-900 leading-relaxed">
+                <strong>This student will be hidden</strong> from the active roster. If they have a registered account,
+                they will be blocked from logging in. This action is reversible via "Restore from Archive".
+              </div>
+            )}
+
+            {/* Reason Field */}
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-gray-700">
+                Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={statusModalReason}
+                onChange={(e) => setStatusModalReason(e.target.value)}
+                disabled={statusModalLoading}
+                placeholder="Enter a reason for this action (required)…"
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none"
+              />
+            </div>
+
+            {/* Error */}
+            {statusModalError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 flex items-center gap-2">
+                <AlertCircle size={14} className="flex-shrink-0" />
+                <span>{statusModalError}</span>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100">
+              <button onClick={handleCloseStatusModal} disabled={statusModalLoading} className="px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition">Cancel</button>
+              <button
+                onClick={handleStatusModalSubmit}
+                disabled={statusModalLoading || statusModalReason.trim().length < 3}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition shadow-sm ${
+                  statusModal.mode === 'archive' ? 'bg-amber-600 hover:bg-amber-700'
+                  : statusModal.mode === 'unarchive' ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-[#0F4F2C] hover:bg-[#082F1A]'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {statusModalLoading ? <><RefreshCw size={13} className="animate-spin" /><span>Saving…</span></>
+                : statusModal.mode === 'archive' ? <><Archive size={13} /><span>Archive Student</span></>
+                : statusModal.mode === 'unarchive' ? <><Undo2 size={13} /><span>Restore Student</span></>
+                : <><ShieldCheck size={13} /><span>Update Status</span></>}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Student Account Reset Modal ── */}
@@ -510,7 +716,7 @@ export default function StudentsTab() {
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-3.5 shadow-sm">
           <div className="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center flex-shrink-0">
             <GraduationCap size={22} />
@@ -552,6 +758,19 @@ export default function StudentsTab() {
           </div>
         </div>
 
+        <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-3.5 shadow-sm cursor-pointer hover:border-gray-300 transition" onClick={() => { setSubTab('archived'); setPage(1); }}>
+          <div className="w-11 h-11 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center flex-shrink-0">
+            <Archive size={22} />
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Archived Records</div>
+            <div className="text-2xl font-bold text-gray-900 leading-tight">
+              {(kpis.archivedCount || 0).toLocaleString()}
+            </div>
+            <div className="text-xs text-gray-400 mt-0.5">Hidden from active roster</div>
+          </div>
+        </div>
+
         <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-3.5 shadow-sm">
           <div className="w-11 h-11 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center flex-shrink-0">
             <Database size={22} />
@@ -588,6 +807,17 @@ export default function StudentsTab() {
         >
           <Users size={16} />
           <span>Master Records ({totalRecords})</span>
+        </button>
+
+        <button
+          onClick={() => { setSubTab('archived'); setPage(1); }}
+          className={`flex items-center gap-2 py-3 px-4 font-semibold text-xs sm:text-sm border-b-2 transition ${subTab === 'archived'
+              ? 'border-amber-500 text-amber-700'
+              : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+        >
+          <Archive size={16} />
+          <span>Archived ({kpis.archivedCount || 0})</span>
         </button>
 
         <button
@@ -859,6 +1089,18 @@ export default function StudentsTab() {
               ))}
             </select>
 
+            {/* Lifecycle Status Filter */}
+            <select
+              value={studentStatusFilter}
+              onChange={(e) => { setStudentStatusFilter(e.target.value); setPage(1); }}
+              className="py-2 px-3 border border-gray-300 rounded-lg text-xs outline-none bg-white text-gray-700"
+            >
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+            </select>
+
             {/* Status Filter */}
             <div className="flex items-center rounded-lg border border-gray-300 overflow-hidden bg-white text-xs">
               <button
@@ -895,22 +1137,23 @@ export default function StudentsTab() {
                   <th className="py-3 px-4">Full Name</th>
                   <th className="py-3 px-4">College / Dept</th>
                   <th className="py-3 px-4">Program</th>
-                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Registration</th>
+                  <th className="py-3 px-4">Lifecycle Status</th>
                   <th className="py-3 px-4">Import Batch</th>
-                  <th className="py-3 px-4 text-right">Action</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-gray-400">
+                    <td colSpan={9} className="py-12 text-center text-gray-400">
                       <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-[#0F4F2C]" />
                       Loading authorized master records…
                     </td>
                   </tr>
                 ) : records.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-gray-400">
+                    <td colSpan={9} className="py-12 text-center text-gray-400">
                       No student records found matching your filters.
                     </td>
                   </tr>
@@ -919,13 +1162,14 @@ export default function StudentsTab() {
                     <tr key={rec.id} className="hover:bg-gray-50/70 transition">
                       <td className="py-3 px-4 font-mono font-bold text-gray-900">{rec.student_no}</td>
                       <td className="py-3 px-4 text-gray-700">{rec.email}</td>
-                      <td className="py-3 px-4 font-medium text-gray-800">{rec.full_name || '—'}</td>
+                      <td className="py-3 px-4 font-medium text-gray-800">{rec.full_name || '\u2014'}</td>
                       <td className="py-3 px-4 text-gray-600 max-w-[200px] truncate" title={rec.department}>
                         {rec.department}
                       </td>
                       <td className="py-3 px-4 text-gray-600 max-w-[180px] truncate" title={rec.program}>
                         {rec.program}
                       </td>
+                      {/* Registration status */}
                       <td className="py-3 px-4">
                         {rec.is_registered ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -937,23 +1181,63 @@ export default function StudentsTab() {
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-gray-500 font-mono text-[11px]">
-                        {rec.batch_filename || rec.import_batch_id?.substring(0, 12) || '—'}
+                      {/* Lifecycle status badge */}
+                      <td className="py-3 px-4">
+                        {(() => {
+                          const s = rec.status || 'active';
+                          const cfg = {
+                            active:    { cls: 'bg-green-50 text-green-700 border-green-200',   label: 'Active' },
+                            inactive:  { cls: 'bg-gray-100 text-gray-600 border-gray-300',      label: 'Inactive' },
+                            suspended: { cls: 'bg-orange-50 text-orange-700 border-orange-200', label: 'Suspended' },
+                            archived:  { cls: 'bg-gray-200 text-gray-500 border-gray-300',      label: 'Archived' },
+                          }[s] || { cls: 'bg-gray-100 text-gray-500 border-gray-200', label: s };
+                          return (
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${cfg.cls}`}
+                              title={rec.status_reason ? `Reason: ${rec.status_reason}` : undefined}
+                            >
+                              {cfg.label}
+                            </span>
+                          );
+                        })()}
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        {!rec.is_registered ? (
+                      <td className="py-3 px-4 text-gray-500 font-mono text-[11px]">
+                        {rec.batch_filename || rec.import_batch_id?.substring(0, 12) || '\u2014'}
+                      </td>
+                      {/* Actions dropdown */}
+                      <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative inline-block">
                           <button
-                            onClick={() => handleDeleteRecord(rec)}
-                            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition"
-                            title="Delete unauthorized or mistaken record"
+                            onClick={(e) => { e.stopPropagation(); setOpenActionMenu(openActionMenu === rec.id ? null : rec.id); }}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition"
+                            title="Actions"
                           >
-                            <Trash2 size={15} />
+                            <MoreHorizontal size={16} />
                           </button>
-                        ) : (
-                          <span className="text-gray-300 text-[11px] cursor-not-allowed" title="Account already registered">
-                            Active
-                          </span>
-                        )}
+                          {openActionMenu === rec.id && (
+                            <div className="absolute right-0 top-8 z-50 bg-white border border-gray-200 rounded-xl shadow-xl min-w-[170px] py-1 text-xs">
+                              {/* Change Status */}
+                              <button
+                                onClick={() => handleOpenStatusModal(rec)}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-gray-700 transition text-left"
+                              >
+                                <ShieldCheck size={14} className="text-blue-600" />
+                                Change Status
+                              </button>
+                              {/* Archive (only if not already archived) */}
+                              {rec.status !== 'archived' && (
+                                <button
+                                  onClick={() => handleOpenArchiveModal(rec)}
+                                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-amber-50 text-amber-700 transition text-left"
+                                >
+                                  <Archive size={14} />
+                                  Archive Student
+                                </button>
+                              )}
+                              {/* Physical deletion is disabled — archive-first design */}
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -984,6 +1268,106 @@ export default function StudentsTab() {
                 >
                   <ChevronRight size={16} />
                 </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab Content: Archived Students ── */}
+      {subTab === 'archived' && (
+        <div className="bg-white rounded-b-xl border border-t-0 border-gray-200 p-6 space-y-4">
+          <div className="flex items-center gap-3 pb-2 border-b border-gray-100">
+            <Archive size={18} className="text-gray-400" />
+            <div>
+              <h3 className="text-sm font-bold text-gray-800">Archived Student Records</h3>
+              <p className="text-xs text-gray-500">These records are hidden from the active roster. Restore a record to make it active again.</p>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative max-w-sm">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search archived records…"
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-xs outline-none focus:border-amber-500"
+            />
+          </div>
+
+          <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50 text-gray-600 font-bold uppercase tracking-wider text-[11px] border-b border-gray-200">
+                <tr>
+                  <th className="py-3 px-4">Student Number</th>
+                  <th className="py-3 px-4">Full Name</th>
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Department</th>
+                  <th className="py-3 px-4">Registration</th>
+                  <th className="py-3 px-4">Archived Reason</th>
+                  <th className="py-3 px-4">Archived By</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-gray-700">
+                {loading ? (
+                  <tr><td colSpan={8} className="py-10 text-center text-gray-400">
+                    <RefreshCw size={22} className="animate-spin mx-auto mb-2 text-amber-500" />
+                    Loading archived records…
+                  </td></tr>
+                ) : records.length === 0 ? (
+                  <tr><td colSpan={8} className="py-12 text-center text-gray-400">
+                    <Archive size={28} className="mx-auto mb-2 opacity-30" />
+                    No archived student records found.
+                  </td></tr>
+                ) : (
+                  records.map((rec) => (
+                    <tr key={rec.id} className="hover:bg-amber-50/30 transition bg-gray-50/40">
+                      <td className="py-3 px-4 font-mono font-bold text-gray-700">{rec.student_no}</td>
+                      <td className="py-3 px-4 text-gray-600">{rec.full_name || '\u2014'}</td>
+                      <td className="py-3 px-4 text-gray-500">{rec.email}</td>
+                      <td className="py-3 px-4 text-gray-500 max-w-[160px] truncate" title={rec.department}>{rec.department}</td>
+                      <td className="py-3 px-4">
+                        {rec.is_registered ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            <CheckCircle2 size={11} /> Had Account
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                            No Account
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-gray-500 text-[11px] max-w-[180px]" title={rec.status_reason}>
+                        {rec.status_reason || '\u2014'}
+                      </td>
+                      <td className="py-3 px-4 text-gray-400 text-[11px]">{rec.status_changed_by || '\u2014'}</td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => handleOpenUnarchiveModal(rec)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition"
+                          title="Restore this student record from archive"
+                        >
+                          <Undo2 size={13} /> Restore
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalRecords > limit && (
+            <div className="flex items-center justify-between pt-3 text-xs text-gray-500">
+              <div>Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalRecords)} of {totalRecords} archived records</div>
+              <div className="flex items-center gap-1">
+                <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="p-1.5 rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-50"><ChevronLeft size={16} /></button>
+                <span className="px-3 py-1 font-semibold text-gray-700">Page {page}</span>
+                <button disabled={page * limit >= totalRecords} onClick={() => setPage(p => p + 1)} className="p-1.5 rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-50"><ChevronRight size={16} /></button>
               </div>
             </div>
           )}

@@ -94,18 +94,24 @@ CREATE TABLE IF NOT EXISTS import_batches (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS student_records (
-  id              INT AUTO_INCREMENT PRIMARY KEY,
-  student_no      VARCHAR(64) NOT NULL UNIQUE,
-  email           VARCHAR(255) NOT NULL UNIQUE,
-  department      VARCHAR(255) NOT NULL,
-  program         VARCHAR(255) NOT NULL,
-  full_name       VARCHAR(255) NULL,
-  is_registered   TINYINT(1) NOT NULL DEFAULT 0,
-  import_batch_id VARCHAR(64) NOT NULL,
-  registered_at   TIMESTAMP NULL,
-  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  student_no          VARCHAR(64) NOT NULL UNIQUE,
+  email               VARCHAR(255) NOT NULL UNIQUE,
+  department          VARCHAR(255) NOT NULL,
+  program             VARCHAR(255) NOT NULL,
+  full_name           VARCHAR(255) NULL,
+  is_registered       TINYINT(1) NOT NULL DEFAULT 0,
+  import_batch_id     VARCHAR(64) NOT NULL,
+  registered_at       TIMESTAMP NULL,
+  created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Student lifecycle status fields
+  status              VARCHAR(32) NOT NULL DEFAULT 'active',  -- 'active' | 'inactive' | 'suspended' | 'archived'
+  status_reason       TEXT NULL,                              -- Admin-supplied reason for status change
+  status_changed_at   TIMESTAMP NULL,                        -- When status was last changed
+  status_changed_by   VARCHAR(255) NULL,                     -- Admin user ID who changed the status
   INDEX idx_sr_email (email),
   INDEX idx_sr_batch (import_batch_id),
-  INDEX idx_sr_lookup (student_no, email)
+  INDEX idx_sr_lookup (student_no, email),
+  INDEX idx_sr_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

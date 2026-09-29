@@ -132,6 +132,39 @@ async function initDb() {
           ADD COLUMN student_record_id INT NULL
         `,
       },
+      // ── Student lifecycle status (added for status management feature) ──────
+      {
+        table: 'student_records',
+        column: 'status',
+        sql: `
+          ALTER TABLE student_records
+          ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'active'
+        `,
+      },
+      {
+        table: 'student_records',
+        column: 'status_reason',
+        sql: `
+          ALTER TABLE student_records
+          ADD COLUMN status_reason TEXT NULL
+        `,
+      },
+      {
+        table: 'student_records',
+        column: 'status_changed_at',
+        sql: `
+          ALTER TABLE student_records
+          ADD COLUMN status_changed_at TIMESTAMP NULL
+        `,
+      },
+      {
+        table: 'student_records',
+        column: 'status_changed_by',
+        sql: `
+          ALTER TABLE student_records
+          ADD COLUMN status_changed_by VARCHAR(255) NULL
+        `,
+      },
     ];
 
     for (const migration of migrations) {
